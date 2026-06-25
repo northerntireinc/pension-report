@@ -187,9 +187,9 @@
     .money.total,.amt .cur{color:#000}
     body.print-union .packet.mgmt{display:none!important}
     body.print-mgmt .packet.union{display:none!important}
-    .gform{border:2px solid #000;width:100%;max-width:none;margin:0;page-break-after:always}
+    .gform{border:2px solid #000;width:auto;max-width:none;margin:.3in;box-sizing:border-box;page-break-after:always}
     .gform:last-child{page-break-after:auto}
-    @page{size:letter portrait;margin:.4in}
+    @page{size:letter portrait;margin:0}
   }
   .sumtbl{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
   .sumtbl th,.sumtbl td{border:1px solid var(--line);padding:7px 9px;text-align:left;white-space:nowrap}
@@ -211,7 +211,12 @@
   .formthumb img{width:100%;display:block}
   .forminfo{flex:1;min-width:0}
   .curbadge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--brass);color:#fff;vertical-align:middle}
-  @media print{ #formPrint img{max-width:100%;max-height:100vh} body.print-form *{visibility:hidden} body.print-form #formPrint,body.print-form #formPrint *{visibility:visible} body.print-form #formPrint{position:fixed;inset:0;display:flex;align-items:center;justify-content:center} }
+  @media print{
+    #formPrint{display:none}
+    #formPrint img{max-width:100%;max-height:10in;display:block;margin:0 auto}
+    body.print-form main>.panel{display:none!important}
+    body.print-form #formPrint{display:block!important;padding:.3in;box-sizing:border-box}
+  }
 </style>
 <body>
 
@@ -1066,14 +1071,17 @@ function renderPrint(){
     }
   }
 }
+function clearPrint(){ document.body.classList.remove("print-union","print-mgmt","print-form"); var fp=document.getElementById("formPrint"); if(fp)fp.innerHTML=""; }
 window.printGroup=function(which){
-  var cls=which==="mgmt"?"print-mgmt":"print-union";
   renderPrint();
-  document.body.classList.add(cls);
-  setTimeout(function(){ window.print(); },60);
-  setTimeout(function(){ document.body.classList.remove("print-union","print-mgmt"); },2000);
+  document.body.classList.add(which==="mgmt"?"print-mgmt":"print-union");
+  setTimeout(function(){ window.print(); },80);
 };
-window.addEventListener("afterprint",function(){ document.body.classList.remove("print-union","print-mgmt"); });
+/* clear print state only when the user is actually done (handles iOS, where the
+   share/print sheet stays open far longer than any fixed timeout) */
+window.addEventListener("afterprint", clearPrint);
+window.addEventListener("focus", function(){ if(/print-(union|mgmt|form)/.test(document.body.className)) clearPrint(); });
+document.addEventListener("visibilitychange", function(){ if(!document.hidden && /print-(union|mgmt|form)/.test(document.body.className)) clearPrint(); });
 window.exportGroup=function(cov){
   var g=groupTotals(cov), t=g.t, s=S.settings, L=[];
   L.push([s.employer,(cov==="mgmt"?"Salary":"Shop Agreement")+" Report — Local 324",monthName()]);
@@ -1383,7 +1391,7 @@ window.delForm=function(fid){ if(!confirm("Delete this form from the library?"))
 window.renameForm=function(fid,val){ var f=(S.forms||[]).filter(function(x){return x.id===fid;})[0]; if(f){f.name=val;persist();} };
 window.reviseForm=function(fid,val){ var f=(S.forms||[]).filter(function(x){return x.id===fid;})[0]; if(f){f.rev=val;persist();renderFormsRev();} };
 window.downloadForm=function(fid){ var f=(S.forms||[]).filter(function(x){return x.id===fid;})[0]; if(!f)return; var a=document.createElement("a"); a.href=f.dataUrl; a.download=(f.name||"form").replace(/[^a-z0-9]+/gi,"_")+".jpg"; document.body.appendChild(a); a.click(); setTimeout(function(){a.remove();},300); };
-window.printForm=function(fid){ var f=(S.forms||[]).filter(function(x){return x.id===fid;})[0]; if(!f)return; var box=document.getElementById("formPrint"); if(!box)return; box.innerHTML='<img src="'+f.dataUrl+'" alt="">'; document.body.classList.add("print-form"); setTimeout(function(){window.print();},60); setTimeout(function(){document.body.classList.remove("print-form");box.innerHTML="";},2000); };
+window.printForm=function(fid){ var f=(S.forms||[]).filter(function(x){return x.id===fid;})[0]; if(!f)return; var box=document.getElementById("formPrint"); if(!box)return; box.innerHTML='<img src="'+f.dataUrl+'" alt="">'; document.body.classList.add("print-form"); setTimeout(function(){window.print();},80); };
 function renderFormsRev(){
   var el=document.getElementById("formsRev"); if(!el)return;
   var cur=(S.forms||[]).filter(function(f){return f.current;})[0];
