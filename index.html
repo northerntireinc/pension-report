@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop Agreement Report — Local 324</title>
+<style>
+  :root{
+    --ink:#15212e;--ink-2:#22323f;--paper:#f6f4ee;--card:#fff;
+    --line:#d8d2c4;--line-2:#e8e3d7;--muted:#6b7480;
+    --brass:#b07a26;--brass-soft:#f2e6cf;--flag:#a8341f;--flag-soft:#f6e0d9;--good:#2f6b4f;
+    --radius:10px;--shadow:0 1px 2px rgba(21,33,46,.06),0 8px 24px rgba(21,33,46,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--paper);color:var(--ink);-webkit-text-size-adjust:100%;line-height:1.45}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+  .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:700;color:var(--muted)}
+
+  header{background:var(--ink);color:#fff;padding:14px 18px;position:sticky;top:0;z-index:30;border-bottom:3px solid var(--brass)}
+  header .wrap{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;letter-spacing:.02em;font-weight:700}
+  header .sub{font-size:11px;color:#9fb0c0;text-transform:uppercase;letter-spacing:.14em;margin-top:2px}
+  .monthsel{display:flex;align-items:center;gap:8px}
+  .monthsel label{font-size:11px;color:#9fb0c0;text-transform:uppercase;letter-spacing:.1em}
+  .monthsel input{background:var(--ink-2);color:#fff;border:1px solid #3a4a58;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit}
+
+  .hero{max-width:1080px;margin:18px auto 0;padding:0 18px}
+  .hero-card{background:var(--ink);color:#fff;border-radius:var(--radius);padding:18px 22px;display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .hero-card:before{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(176,122,38,.28),transparent 70%);pointer-events:none}
+  .hero-total .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:#9fb0c0}
+  .hero-total .amt{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-top:2px}
+  .hero-total .amt .cur{color:var(--brass);font-weight:700}
+  .hero-breakdown{display:flex;gap:20px;flex-wrap:wrap}
+  .hero-breakdown div .k{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:#9fb0c0}
+  .hero-breakdown div .v{font-size:17px;font-weight:700;margin-top:2px}
+
+  nav.tabs{max-width:1080px;margin:16px auto 0;padding:0 18px;display:flex;gap:4px;flex-wrap:wrap}
+  nav.tabs button{border:1px solid var(--line);border-bottom:none;background:#efece3;color:var(--muted);padding:11px 15px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border-radius:10px 10px 0 0}
+  nav.tabs button.active{background:var(--card);color:var(--ink);box-shadow:0 -2px 0 var(--brass) inset}
+
+  main{max-width:1080px;margin:0 auto;padding:0 18px 60px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:0 var(--radius) var(--radius) var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .panel h2{font-size:15px;margin:0 0 4px}
+  .panel .hint{font-size:13px;color:var(--muted);margin:0 0 18px;max-width:64ch}
+  .section-div{height:1px;background:var(--line-2);margin:22px 0}
+
+  .grid{display:grid;gap:14px}
+  .grid.two{grid-template-columns:1fr 1fr}
+  .grid.three{grid-template-columns:1fr 1fr 1fr}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+  .field .sub{font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+  input[type=text],input[type=number],input[type=month],select{border:1px solid var(--line);border-radius:8px;padding:10px 11px;font-size:15px;font-family:inherit;background:#fff;color:var(--ink);width:100%}
+  input:focus,select:focus{outline:2px solid var(--brass);outline-offset:0;border-color:var(--brass)}
+  .prefix{position:relative}
+  .prefix span{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+  .prefix input{padding-left:24px}
+
+  .btn{border:1px solid var(--ink);background:var(--ink);color:#fff;padding:11px 16px;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
+  .btn:hover{background:var(--ink-2)}
+  .btn.ghost{background:#fff;color:var(--ink)}
+  .btn.ghost:hover{background:var(--paper)}
+  .btn.brass{background:var(--brass);border-color:var(--brass)}
+  .btn.sm{padding:7px 11px;font-size:12.5px}
+  .btn.danger{background:#fff;color:var(--flag);border-color:var(--flag)}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:var(--radius)}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  thead th{background:#f0ede4;text-align:left;padding:10px 11px;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:9px 11px;border-bottom:1px solid var(--line-2);vertical-align:middle;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.r,th.r{text-align:right}
+  tfoot td{padding:11px;font-weight:800;border-top:2px solid var(--ink);background:#faf8f2}
+  .money{font-variant-numeric:tabular-nums}.money.total{color:var(--brass);font-weight:800}
+  .cellinput{width:84px;border:1px solid var(--line);border-radius:6px;padding:7px 8px;font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
+  .name-cell{font-weight:600;min-width:130px;white-space:normal}
+  .pill{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:999px}
+  .pill.sal{background:#e7eef3;color:#33566b}.pill.hr{background:#eef0e7;color:#4a5b33}
+  .pill.floor{background:var(--flag-soft);color:var(--flag)}
+  .pill.mgmt{background:#efe7f3;color:#5b3a6b}
+  .empty{padding:34px 16px;text-align:center;color:var(--muted);font-size:14px}
+  .note{background:var(--brass-soft);border:1px solid #e5cfa0;border-radius:8px;padding:12px 14px;font-size:13px;color:#5e4514;margin-top:6px}
+  .note b{color:#3f2e0c}
+  .footnote{font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5}
+
+  .emp-card{border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px;background:#fff}
+  .emp-card.floored{border-color:var(--flag)}
+  .emp-card .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .emp-card .top .nm{font-weight:700;font-size:15px}
+  .emp-card .top .hrs{font-variant-numeric:tabular-nums;font-weight:800;color:var(--brass)}
+  .emp-card .ins{display:grid;gap:10px}
+  .emp-card .ins.sal{grid-template-columns:1fr 1fr}
+  .emp-card .ins.hr{grid-template-columns:1fr 1fr 1fr 1fr}
+  .emp-card .ins .field label{font-size:10px}
+  .emp-card .ins input{padding:8px;font-size:15px;text-align:right}
+  .emp-card .calc{margin-top:10px;font-size:12px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+  .emp-card .calc b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+  /* form-style printable */
+  .formdoc{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-top:6px}
+  .formdoc .fh{display:flex;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .formdoc .fh .t{font-weight:800;font-size:15px;letter-spacing:.02em}
+  .formdoc .fh .meta{font-size:12px;color:var(--muted);text-align:right;line-height:1.6}
+  .kv{font-size:13px;display:flex;flex-wrap:wrap;gap:4px 26px;margin-bottom:14px}
+  .kv div b{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-right:6px}
+
+  @media (max-width:640px){
+    .grid.two,.grid.three{grid-template-columns:1fr}
+    .emp-card .ins.hr{grid-template-columns:1fr 1fr}
+    .hero-total .amt{font-size:32px}
+    main{padding:0 12px 50px}.hero{padding:0 12px}header{padding:12px 12px}
+  }
+  .payrow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#f0ede4;border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin:6px 0}
+  .nudge{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--brass-soft);border:1px solid #e5cfa0;border-radius:var(--radius);padding:12px 14px;margin:6px 0;color:#5e4514}
+  .prtblock{margin-bottom:6px}
+  .prthead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .prthead .prtsum{font-weight:700;font-size:14px;margin-top:3px}
+  .packet{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* ===== Local 324 form facsimile ===== */
+  .gform{background:#fff;color:#000;border:2px solid #000;width:860px;max-width:100%;margin:0 auto 16px;font-family:"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-size:10px;line-height:1.12}
+  .gform .ghdr{display:flex;border-bottom:2px solid #000}
+  .gform .hbox{padding:5px 7px;border-right:1px solid #000}
+  .gform .hbox:last-child{border-right:none}
+  .gform .hb-left{width:36%}.gform .hb-mid{width:38%;text-align:center}.gform .hb-right{width:26%;text-align:center}
+  .gform .tiny{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+  .gform .chk{font-size:7.5px;margin-top:4px;display:flex;gap:4px;align-items:flex-start;text-align:left}
+  .gform .chk .box{display:inline-block;width:8px;height:8px;border:1px solid #000;flex:0 0 auto;margin-top:1px}
+  .gform .bigttl{font-size:16px;font-weight:800;letter-spacing:.04em}
+  .gform .midttl{font-size:10px;font-weight:800;border-bottom:1px solid #000;padding-bottom:3px;margin-bottom:3px}
+  .gform .subttl{font-size:8px;font-weight:700}
+  .gform .rev{font-size:14px;font-weight:800;border:1px solid #000;display:inline-block;padding:1px 10px;margin:3px 0}
+  .gform .grow{display:flex;border-bottom:1px solid #000}
+  .gform .gc{border-right:1px solid #000;padding:3px 6px;min-height:32px;flex:1;display:flex;flex-direction:column}
+  .gform .gc:last-child{border-right:none}
+  .gform .gc .lab{font-size:6.5px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+  .gform .gc .v{font-size:12px;font-weight:700;margin-top:2px}
+  .gform .gc-name{flex:1.5}.gform .gc-pg{flex:.5}
+  .gform .band{background:#000;color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;text-align:center;padding:3px}
+  .gform .bandsub{font-size:6.5px;font-weight:700;text-align:center;padding:2px;border-bottom:1px solid #000}
+  .gform table.agt{border-collapse:collapse;width:100%;table-layout:fixed}
+  .gform table.agt th,.gform table.agt td{border:1px solid #000;padding:2px 1px;text-align:center;font-size:6.5px;overflow:hidden}
+  .gform table.agt th{font-weight:700;line-height:1.04}
+  .gform table.agt .agn{text-align:left;font-size:7.5px;padding-left:3px}
+  .gform table.agt td.sec,.gform table.agt td.mk{font-weight:800;font-size:9px}
+  .gform table.agt tr.agon td{font-weight:800;background:#e3e3e3}
+  .gform table.agt td.ac{font-size:7.5px;font-weight:700}
+  .gform table.remt{border-collapse:collapse;width:100%;table-layout:fixed}
+  .gform table.remt th,.gform table.remt td{border:1px solid #000;padding:4px 4px;font-size:8px;vertical-align:middle}
+  .gform table.remt th{font-size:7px;font-weight:700;text-transform:uppercase;text-align:center;background:#e9e9e9;line-height:1.05}
+  .gform .rf{text-align:left;width:24%;font-weight:700;text-transform:uppercase;font-size:7.5px}
+  .gform .rr{width:11%;text-align:right;font-variant-numeric:tabular-nums}
+  .gform .rx{width:3%;text-align:center}
+  .gform .rm{width:18%;text-align:right;font-variant-numeric:tabular-nums}
+  .gform .rm .msub{font-size:5.5px;color:#555;text-align:right;font-weight:700}
+  .gform .ra,.gform .rt{width:15%;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  .gform .radj{width:11%}
+  .gform .grl{text-align:right;font-weight:800;font-size:8px;text-transform:uppercase}
+  .gform .grt{font-size:13px;font-weight:800}
+  .gform .mailrow{display:flex;justify-content:space-between;gap:10px;padding:7px;border-top:1px solid #000;font-size:7.5px}
+  .gform .mailto b{font-size:8px}
+  .gform .packetnote{font-size:8px;font-weight:800;text-align:right;align-self:flex-end;text-transform:uppercase}
+  .gform.p2 .p2title{font-size:11px;font-weight:800;text-transform:uppercase;text-align:center;padding:4px;border-bottom:2px solid #000;letter-spacing:.02em}
+  .gform.p2 .p2meta{display:flex;border-bottom:2px solid #000}
+  .gform.p2 .p2body{display:flex}
+  .gform.p2 table.dett{border-collapse:collapse;width:72%;table-layout:fixed}
+  .gform.p2 table.dett th,.gform.p2 table.dett td{border:1px solid #000;padding:3px 5px;font-size:9px;height:19px}
+  .gform.p2 table.dett th{font-size:7px;font-weight:700;text-transform:uppercase;text-align:left;line-height:1.05;vertical-align:bottom}
+  .gform.p2 .ln{width:34%}.gform.p2 .ini{width:13%;text-align:center}.gform.p2 .ssn{width:25%}
+  .gform.p2 .hp,.gform.p2 .bw{text-align:right;font-variant-numeric:tabular-nums}
+  .gform.p2 .totlbl{text-align:right;font-weight:800;text-transform:uppercase;font-size:8px}
+  .gform.p2 .p2side{width:28%;border-left:2px solid #000;padding:7px;font-size:7px;line-height:1.28}
+  .gform.p2 .sidettl{font-weight:800;text-transform:uppercase;font-size:8px;margin-bottom:3px}
+  .gform.p2 .sidep{margin-bottom:5px}
+  .gform.p2 .sidenotice{border:1px solid #000;padding:4px;margin:6px 0;font-weight:700}
+  .gform.p2 .sideimp{margin:6px 0}
+  .gform.p2 .sig{margin-top:16px}
+  .gform.p2 .sigline{border-bottom:1px solid #000;padding-bottom:2px;font-size:15px;font-family:"Segoe Script","Snell Roundhand","Brush Script MT",cursive}
+  .gform.p2 .siglab{font-size:6.5px;text-transform:uppercase;margin-top:2px}
+  .gform.p2 .sigtitle{font-size:8px;font-weight:700;margin-top:4px}
+  @media print{
+    header,nav.tabs,.btnrow,.hero,.no-print,.prthead,.section-div{display:none!important}
+    body{background:#fff}.panel{box-shadow:none;border:none;padding:0}.packet{overflow:visible}
+    .money.total,.amt .cur{color:#000}
+    body.print-union .packet.mgmt{display:none!important}
+    body.print-mgmt .packet.union{display:none!important}
+    .gform{border:2px solid #000;width:100%;max-width:none;margin:0;page-break-after:always}
+    .gform:last-child{page-break-after:auto}
+    @page{size:letter portrait;margin:.4in}
+  }
+  .sumtbl{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+  .sumtbl th,.sumtbl td{border:1px solid var(--line);padding:7px 9px;text-align:left;white-space:nowrap}
+  .sumtbl thead th{background:var(--paper);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .sumtbl .num{text-align:right;font-variant-numeric:tabular-nums}
+  .sumtbl tfoot td{background:var(--paper);font-weight:700;border-top:2px solid var(--ink)}
+  .sumtbl.mini{min-width:0;font-size:12px;margin-top:8px}
+  .sumtbl.mini th,.sumtbl.mini td{padding:5px 8px}
+  .filerow{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff}
+  .filehead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .fbadge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;vertical-align:middle}
+  .fbadge.fb-u{background:#1f3a2e;color:#dff0e6}
+  .fbadge.fb-m{background:#3a2f1f;color:#f0e6d0}
+  .holiday{background:#fdf3e3;border:1px solid #e0b878;border-left:4px solid #c8862a;border-radius:10px;padding:11px 14px;margin-top:10px;font-size:13px;color:#6b4a1a;line-height:1.45}
+  .holiday b{color:#5a3d14}
+  .formcard{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:#fff;display:flex;gap:14px;align-items:flex-start}
+  .formcard.cur{border-color:var(--brass);box-shadow:0 0 0 2px rgba(184,134,42,.18)}
+  .formthumb{width:108px;flex:0 0 108px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#f3f1ea}
+  .formthumb img{width:100%;display:block}
+  .forminfo{flex:1;min-width:0}
+  .curbadge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--brass);color:#fff;vertical-align:middle}
+  @media print{ #formPrint img{max-width:100%;max-height:100vh} body.print-form *{visibility:hidden} body.print-form #formPrint,body.print-form #formPrint *{visibility:visible} body.print-form #formPrint{position:fixed;inset:0;display:flex;align-items:center;justify-content:center} }
+</style>
+<body>
+
+<header>
+  <div class="wrap">
+    <div><h1 id="hdrEmployer">Northern Tire, Inc.</h1><div class="sub">Local 324 Shop Agreement Report</div></div>
+    <div class="monthsel"><label for="monthInput">Work month</label><input type="month" id="monthInput"></div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-card">
+    <div class="hero-total">
+      <div class="lbl" id="heroLbl">Total contributions due</div>
+      <div class="amt"><span class="cur">$</span><span id="heroAmt" class="num">0.00</span></div>
+    </div>
+    <div class="hero-breakdown" id="heroBreak"></div>
+  </div>
+</section>
+
+<nav class="tabs">
+  <button data-tab="report" class="active">Shop Report</button>
+  <button data-tab="print">Print / File</button>
+  <button data-tab="summary">Summary</button>
+  <button data-tab="filings">Filings</button>
+  <button data-tab="forms">Forms</button>
+  <button data-tab="contract">Contract</button>
+  <button data-tab="employees">Employees</button>
+  <button data-tab="setup">Setup &amp; Rates</button>
+</nav>
+
+<main>
+  <!-- MONTHLY REPORT -->
+  <div class="panel" id="tab-report">
+    <h2>Shop Agreement report</h2>
+    <p class="hint">Section S, Operating Engineers Local 324. Worked hours come from the time clock — import the CSV or enter them — plus sick and vacation days for any zero days. Fringes are figured on actual hours (no hours minimum). (Switch an employee to Monthly only if you report a fixed figure instead.)</p>
+    <div class="btnrow no-print" id="importRow">
+      <label class="btn ghost sm" style="cursor:pointer">Import worked hours (CSV)<input type="file" id="csvFile" accept=".csv" style="display:none"></label>
+      <span class="footnote" style="margin:0;align-self:center">From the Time Clock export — fills hourly employees' worked hours.</span>
+    </div>
+    <div id="mapArea"></div>
+    <div class="section-div"></div>
+    <div id="reportList"></div>
+    <div class="footnote" id="floorNote"></div>
+  </div>
+
+  <!-- PRINT / FILE -->
+  <div class="panel" id="tab-print" style="display:none">
+    <h2 class="no-print">Print &amp; file</h2>
+    <p class="hint no-print">Two separate filings each month — the union <b>Shop Agreement</b> report and the <b>Salary</b> (management) report. Set the work month up top, then print each one on its own. Each prints its 3023 remittance and 326 detail sheet together; SSNs print on the detail you submit.</p>
+    <div class="btnrow no-print"><button class="btn ghost sm" onclick="toggleSSN()" id="ssnBtn">Reveal SSNs</button></div>
+
+    <div id="sundayNudge" class="nudge no-print" style="display:none">
+      <div><b>It&rsquo;s Sunday.</b> Time to send this week&rsquo;s payroll to Tandem Tax.</div>
+      <div class="btnrow" style="margin:0">
+        <button class="btn ghost sm" onclick="emailReminder()">Send reminder</button>
+        <button class="btn brass sm" onclick="emailPayroll()">Email payroll now</button>
+      </div>
+    </div>
+    <div class="payrow no-print">
+      <div><div class="eyebrow">Payroll &middot; Tandem Tax</div><div class="prtsum" id="payTo"></div></div>
+      <button class="btn" onclick="emailPayroll()">Email payroll to Tandem Tax</button>
+    </div>
+    <div id="holidayNote" class="holiday no-print" style="display:none"></div>
+
+    <div class="section-div no-print"></div>
+    <div class="prtblock">
+      <div class="prthead no-print">
+        <div><div class="eyebrow">Shop Agreement &middot; union</div><div class="prtsum" id="sumUnion"></div></div>
+        <div class="btnrow" style="margin:0">
+          <button class="btn ghost sm" onclick="recordFiling('union')">Record filing</button>
+          <button class="btn ghost sm" onclick="exportGroup('union')">CSV</button>
+          <button class="btn brass" onclick="printGroup('union')">Print Shop report</button>
+        </div>
+      </div>
+      <div class="packet union" id="packetUnion"></div>
+    </div>
+
+    <div class="section-div no-print"></div>
+    <div class="prtblock">
+      <div class="prthead no-print">
+        <div><div class="eyebrow">Salary &middot; management</div><div class="prtsum" id="sumMgmt"></div></div>
+        <div class="btnrow" style="margin:0">
+          <button class="btn ghost sm" onclick="recordFiling('mgmt')">Record filing</button>
+          <button class="btn ghost sm" onclick="exportGroup('mgmt')">CSV</button>
+          <button class="btn brass" onclick="printGroup('mgmt')">Print Salary report</button>
+        </div>
+      </div>
+      <div class="packet mgmt" id="packetMgmt"></div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="panel" id="tab-summary" style="display:none">
+    <h2 class="no-print">Summary &amp; roll-up</h2>
+    <p class="hint no-print">Add up hours and fund dollars across any span &mdash; one month, a quarter, a year, or a custom range of months. This is a <b>records / reconciliation</b> view, not an official form: the fund takes monthly remittances. Hours are bucketed by work month, so ranges snap to whole months.</p>
+    <div class="grid two no-print" style="max-width:620px">
+      <div class="field"><label>Range</label>
+        <select id="sumRange">
+          <option value="month">Single month</option>
+          <option value="quarter">Quarter</option>
+          <option value="year">Year</option>
+          <option value="custom">Custom (month range)</option>
+        </select>
+      </div>
+      <div class="field"><label>Coverage</label>
+        <select id="sumCov">
+          <option value="union">Shop (union)</option>
+          <option value="mgmt">Salary (management)</option>
+          <option value="all">Both</option>
+        </select>
+      </div>
+      <div class="field" id="sumF_month"><label>Month</label><input type="month" id="sumMonth"></div>
+      <div class="field" id="sumF_year" style="display:none"><label>Year</label><input type="number" id="sumYear" min="2000" max="2100" step="1"></div>
+      <div class="field" id="sumF_qtr" style="display:none"><label>Quarter</label>
+        <select id="sumQtr"><option value="1">Q1 &middot; Jan–Mar</option><option value="2">Q2 &middot; Apr–Jun</option><option value="3">Q3 &middot; Jul–Sep</option><option value="4">Q4 &middot; Oct–Dec</option></select>
+      </div>
+      <div class="field" id="sumF_from" style="display:none"><label>From month</label><input type="month" id="sumFrom"></div>
+      <div class="field" id="sumF_to" style="display:none"><label>To month</label><input type="month" id="sumTo"></div>
+    </div>
+    <div class="btnrow no-print"><button class="btn ghost sm" onclick="emailSummary()">Email summary</button><button class="btn brass sm" onclick="window.print()">Print summary</button></div>
+    <div class="section-div"></div>
+    <div id="summaryOut"></div>
+  </div>
+
+  <!-- FILINGS -->
+  <div class="panel" id="tab-filings" style="display:none">
+    <h2 class="no-print">Filing history</h2>
+    <p class="hint no-print">A saved record of each remittance you&rsquo;ve filed. Tap <b>Record filing</b> on the Print / File tab after you submit one &mdash; it snapshots the hours, fund amounts and total <b>as they were that day</b>, so later edits to rates or hours never change the history. Stored on this device.</p>
+    <div class="btnrow no-print"><button class="btn ghost sm" onclick="exportFilings()">Export all (CSV)</button></div>
+    <div class="section-div"></div>
+    <div id="filingsOut"></div>
+  </div>
+
+  <!-- FORMS -->
+  <div class="panel" id="tab-forms" style="display:none">
+    <h2 class="no-print">Form library</h2>
+    <p class="hint no-print">Keep the union&rsquo;s current blank forms on this device. When Local 324 issues an updated version, upload a clear photo or screenshot of it here and mark it current &mdash; so you always have the latest on hand to print, fill, or check against. Stored on this device; images are shrunk automatically to save space.</p>
+    <div class="btnrow no-print">
+      <label class="btn ghost sm" style="cursor:pointer">Upload form image<input type="file" id="formFile" accept="image/*" style="display:none"></label>
+      <span class="footnote" style="margin:0;align-self:center">PNG or JPG &mdash; a phone photo or screenshot works. PDFs: screenshot the page first.</span>
+    </div>
+    <div class="footnote" id="formsRev" style="margin-top:8px"></div>
+    <div class="section-div"></div>
+    <div id="formsOut"></div>
+  </div>
+
+  <div id="formPrint" style="display:none"></div>
+
+  <!-- CONTRACT -->
+  <div class="panel" id="tab-contract" style="display:none">
+    <h2 class="no-print">Contract update</h2>
+    <p class="hint no-print">When a new agreement takes effect, review it and enter what changed here &mdash; the app pushes the new <b>premiums</b> (fund rates), <b>minimum</b> hours, and <b>limit</b> (hours cap) into every report and the printed form, and logs the change with its effective date. Fields start at your current values, so you only touch what moved. (The app can&rsquo;t read the contract for you &mdash; you key the numbers; it does the rest.)</p>
+
+    <div id="contractReview" class="no-print" style="margin-bottom:16px"></div>
+
+    <div class="grid two no-print" style="max-width:620px">
+      <div class="field"><label>Effective date</label><input type="date" id="ctEff"></div>
+      <div class="field"><label>Contract label <span class="sub">e.g. 2026–2029 Shop Agreement</span></label><input type="text" id="ctLabel" placeholder="optional"></div>
+    </div>
+
+    <div class="section-div no-print"></div>
+    <div class="eyebrow no-print" style="margin-bottom:8px">Premiums &mdash; fund rates</div>
+    <div id="ctPremiums" class="no-print"></div>
+
+    <div class="grid two no-print" style="max-width:620px;margin-top:14px">
+      <div class="field"><label>Minimum hours <span class="sub">floor — 0 = none</span></label><input type="number" id="ctMin" step="1" min="0" placeholder="0"></div>
+      <div class="field"><label>Limit — max hours/mo <span class="sub">cap — blank = none</span></label><input type="number" id="ctMax" step="0.01" min="0" placeholder="none"></div>
+    </div>
+
+    <div id="ctDiff" class="no-print" style="margin-top:12px"></div>
+    <div class="btnrow no-print">
+      <button class="btn ghost sm" onclick="contractResetFields()">Reset to current</button>
+      <button class="btn brass" onclick="applyContractUpdate()">Apply contract update</button>
+    </div>
+
+    <div class="section-div no-print"></div>
+    <div class="eyebrow no-print" style="margin-bottom:8px">Update history</div>
+    <div id="contractHist" class="no-print"></div>
+  </div>
+
+  <!-- EMPLOYEES -->
+  <div class="panel" id="tab-employees" style="display:none">
+    <h2>Employees</h2>
+    <p class="hint">Add each covered employee once. Type sets how their hours are reported. SSN is stored only on this device for the detail sheet.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Name</th><th>SSN</th><th>Type</th><th>Coverage</th><th class="r">Hrs/day</th><th class="r">Clerical $/wk</th><th></th></tr></thead>
+        <tbody id="empBody"></tbody>
+      </table>
+    </div>
+    <div class="section-div"></div>
+    <div class="grid three" style="align-items:end">
+      <div class="field"><label>Name <span class="sub">Last, First</span></label><input type="text" id="newName" placeholder="Forbes, Jeremy"></div>
+      <div class="field"><label>SSN <span class="sub">optional</span></label><input type="text" id="newSSN" placeholder="000-00-0000"></div>
+      <div class="field"><label>Type</label><select id="newType"><option value="hourly">Hourly</option><option value="salaried">Monthly hours</option></select></div>
+      <div class="field"><label>Coverage</label><select id="newCoverage"><option value="union">Union</option><option value="mgmt">Management (health only)</option></select></div>
+    </div>
+    <div class="btnrow"><button class="btn" onclick="addEmployee()">Add employee</button></div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="panel" id="tab-setup" style="display:none">
+    <h2>Company setup &amp; fund rates</h2>
+    <p class="hint">Header info prints on both forms. Rates come from your CBA / Form 3023 rate table. Pre-filled with Northern Tire&rsquo;s Shop Agreement (Section S).</p>
+
+    <div class="eyebrow" style="margin-bottom:10px">Employer / contractor</div>
+    <div class="grid two">
+      <div class="field"><label>Company name</label><input type="text" id="setEmployer"></div>
+      <div class="field"><label>Contractor code</label><input type="text" id="setCode" placeholder="202251"></div>
+      <div class="field"><label>EIN</label><input type="text" id="setEIN" placeholder="38-1675734"></div>
+      <div class="field"><label>Telephone</label><input type="text" id="setPhone"></div>
+      <div class="field"><label>Address</label><input type="text" id="setAddr"></div>
+      <div class="field"><label>City, State ZIP</label><input type="text" id="setCity"></div>
+    </div>
+
+    <div class="section-div"></div>
+    <div class="eyebrow" style="margin-bottom:10px">Reporting rules</div>
+    <div class="grid two" style="max-width:560px">
+      <div class="field"><label>Monthly minimum hours <span class="sub">0 = none (no contractual floor)</span></label><input type="number" id="setMin" step="1" min="0" placeholder="0"></div>
+      <div class="field"><label>Monthly maximum hours <span class="sub">cap — blank = none. Set via Contract tab</span></label><input type="number" id="setMax" step="0.01" min="0" placeholder="none"></div>
+      <div class="field"><label>Standard monthly hours <span class="sub">default for new monthly employees</span></label><input type="number" id="setStd" step="0.01" min="0" placeholder="optional"></div>
+      <div class="field"><label>Agreement marked &ldquo;X&rdquo; <span class="sub">row checked on the 3022 form</span></label><select id="setAgmt"></select></div>
+      <div class="field"><label>Form number <span class="sub">printed on the facsimile header</span></label><input type="text" id="setFormNo" placeholder="Form 3022 · Remittance Report"></div>
+      <div class="field"><label>Form revision <span class="sub">update when the union revises it</span></label><input type="text" id="setFormRev" placeholder="REV. 6/22"></div>
+    </div>
+
+    <div class="section-div"></div>
+    <div class="eyebrow" style="margin-bottom:10px">Payroll email &mdash; Tandem Tax</div>
+    <div class="grid two" style="max-width:560px">
+      <div class="field"><label>Send to <span class="sub">Avery at Tandem Tax</span></label><input type="text" id="setPrTo" placeholder="avery@tandemtax.com"></div>
+      <div class="field"><label>CC <span class="sub">optional</span></label><input type="text" id="setPrCc" placeholder="optional"></div>
+      <div class="field"><label>Pay period start <span class="sub">first day of the first week</span></label><input type="date" id="setPerStart"></div>
+      <div class="field"><label>Pay period end <span class="sub">last day of the last week</span></label><input type="date" id="setPerEnd"></div>
+      <div class="field"><label>Reminder email <span class="sub">who gets the Sunday reminder</span></label><input type="text" id="setReminder" placeholder="vickisaul@me.com"></div>
+    </div>
+    <div class="footnote" id="periodHint" style="margin-top:6px"></div>
+    <div class="btnrow"><button class="btn ghost sm" onclick="autoFillPeriod()">Auto (last Friday rule)</button></div>
+    <div class="note"><b>Pay period:</b> by default the app <b>hard-locks to the last Friday</b> of each month &mdash; weeks run Sun–Sat and are paid the following Friday, so the period ends the Saturday before the month&rsquo;s last Friday and the week count is the number of Fridays in the month (June 2026: last Friday the 26th &rarr; May 24 – Jun 20, 4 weeks). You don&rsquo;t need to enter dates &mdash; they fill in automatically when you switch the work month. Type into the date boxes only to override a month; tap <b>Auto</b> to snap it back to the rule.</div>
+    <div class="note"><b>One-tap send:</b> the <b>Email payroll</b> button on the Print / File tab opens your Mail app pre-addressed to Avery with everyone&rsquo;s hours in the body. Send it from the <b>vsaul@northerntireinc.com</b> account so it comes from the right address. The app can&rsquo;t attach files or auto-send on a schedule &mdash; to also send the forms, print them to PDF first and attach. On Sundays a reminder appears on the Print / File tab.</div>
+
+    <div class="section-div"></div>
+    <div class="eyebrow" style="margin-bottom:10px">Fund contribution rates</div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Fund</th><th class="r">Rate</th><th>Basis</th><th>Mgmt</th><th></th></tr></thead>
+        <tbody id="fundBody"></tbody>
+      </table>
+    </div>
+    <div class="btnrow"><button class="btn ghost sm" onclick="addFund()">Add fund line</button></div>
+    <div class="note"><b>Basis:</b> Per hour = rate &times; paid hours. % base wages = rate% of base wages (e.g., Vacation &amp; Holiday). Flat = rate per active employee. Funds with a 0 rate don&rsquo;t appear on the remittance. <b>Mgmt:</b> checked = this fund also applies to non-union / management employees (e.g., Health Care for Lee). Unchecked funds are union-only.</div>
+
+    <div class="section-div"></div>
+    <div class="btnrow">
+      <button class="btn ghost danger" onclick="resetMonth()">Clear this month</button>
+      <button class="btn ghost danger" onclick="resetAll()">Reset everything</button>
+    </div>
+    <div class="footnote">Saves to this device. Single file — deploy to GitHub Pages. SSNs never leave the device except on the detail sheet you export/print to submit.</div>
+  </div>
+</main>
+
+<script>
+"use strict";
+var KEY="ntiFringeRemit.v2";var mem=null;
+function store(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){mem=o;}}
+function load(){try{var r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){if(mem)return mem;}return null;}
+function ym(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+var thisMonth=ym(new Date());
+function id(){return "e"+Math.random().toString(36).slice(2,9);}
+
+/* Local 324 agreement rate schedule (Form 3022 REV 6/22 reference grid) — transcribed from the printed form.
+   Reference-only: the marked row carries an X; the money actually owed is computed in the Remittance section
+   from the live rates in Setup, not from this grid. */
+var AGREEMENTS=[
+ {sec:"A",sub:"A",  name:"AGC - Detroit Metro CBA",        eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","$0.18","\u2014","$1.10"]},
+ {sec:"", sub:"AX", name:"Small equipment addendum",       eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.15","$0.14","\u2014","$1.00"]},
+ {sec:"B",sub:"B",  name:"MUCG Underground Agreement",      eff:"9-1-21", r:["$8.40","$13.95","$0.45","15%","$0.05","$1.00","$0.05","$0.03","$0.18","$0.08","$1.00"]},
+ {sec:"", sub:"BX", name:"Class V Operator",               eff:"9-1-21", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.03","\u2014","$0.08","$1.00"]},
+ {sec:"C",sub:"C",  name:"AGC - Outstate Addendum",         eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.03","$0.18","\u2014","$1.00"]},
+ {sec:"", sub:"CX", name:"Small equipment addendum",        eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.03","\u2014","$0.08","$1.00"]},
+ {sec:"D",sub:"D",  name:"Distribution and Communications", eff:"5-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","$0.14","\u2014","$1.00"]},
+ {sec:"", sub:"DX", name:"Cable-Com-Utility Engineer",      eff:"5-1-22", r:["$6.50","$3.00","\u2014","15%","\u2014","$0.50","$0.05","$0.05","$0.14","\u2014","$1.00"]},
+ {sec:"E",sub:"E",  name:"AGC - Upper Peninsula",           eff:"5-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","\u2014","\u2014","$1.00"]},
+ {sec:"", sub:"EX", name:"Class E Operator",               eff:"5-1-22", r:["$6.50","$4.00","$0.10","15%","\u2014","$0.70","$0.05","$0.15","\u2014","\u2014","$0.75"]},
+ {sec:"G",sub:"G",  name:"National Pipeline Agreement",     eff:"6-1-22", r:["$8.45","$13.95","$0.45","15%","$0.02","$1.00","\u2014","\u2014","$0.15","\u2014","$0.75"]},
+ {sec:"H",sub:"H",  name:"Highway, Bridge & Airport Agmt.", eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","$0.05","$1.00","$0.05","$0.03","$0.16","$0.10","$1.00"]},
+ {sec:"", sub:"HX", name:"Class V Operator",               eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.03","$0.16","$0.10","$1.00"]},
+ {sec:"H",sub:"HU", name:"Highway, Bridge & Airport (U.P.)",eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","$0.05","$1.00","$0.05","$0.03","\u2014","$0.10","$1.00"]},
+ {sec:"", sub:"HUX",name:"Class V Operator",               eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.06","$0.16","$0.06","$1.00"]},
+ {sec:"J",sub:"J",  name:"Great Lakes Fab & Erector Assn",  eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.36","\u2014","$0.05","$1.00"]},
+ {sec:"", sub:"JX", name:"Oiler - Ground Man, etc.",        eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","$0.05","$1.00","$0.05","$0.36","$0.19","\u2014","$1.00"]},
+ {sec:"K",sub:"K",  name:"Floating - Grt. Lakes & Marine",  eff:"1-1-21", r:["$8.40","$13.95","$0.45","15%","$0.05","$0.45","$0.05","$0.33","$0.14","\u2014","$1.00"]},
+ {sec:"O",sub:"O",  name:"Owner - Operator",                eff:"6-1-22", r:["$8.40","$13.95","$0.45","\u2014","\u2014","$1.00","$0.05","\u2014","$0.25","\u2014","$1.00"]},
+ {sec:"S",sub:"S",  name:"Shop Agreement",                  eff:"",       r:["\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","$0.19","\u2014","$1.10"]},
+ {sec:"U",sub:"U",  name:"CAM - S E Michigan",              eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","$0.19","\u2014","$1.10"]},
+ {sec:"", sub:"UX", name:"Small equipment addendum",        eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.15","$0.14","\u2014","$1.00"]},
+ {sec:"V",sub:"V",  name:"CAM - Outstate Addendum",         eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","$0.16","\u2014","$1.00"]},
+ {sec:"", sub:"VX", name:"Small equipment addendum",        eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.15","$0.14","\u2014","$1.00"]}
+];
+
+function fresh(){
+  var leeId=id(), jId=id(), kId=id(), bId=id();
+  var data={
+    settings:{
+      employer:"Northern Tire, Inc.", code:"202251", ein:"38-1675734",
+      phone:"906-486-4463 / 870-830-4945", addr:"1880 US Hwy 41 W", city:"Ishpeming, MI 49849",
+      minHours:0, stdSalaried:null, payWeeks:4, weekEndDay:6,
+      periods:{},
+      payrollTo:"", payrollCc:"", payrollFrom:"vsaul@northerntireinc.com", reminderTo:"vickisaul@me.com",
+      agreement:"S", formNo:"Form 3022 \u00b7 Remittance Report", formRev:"REV. 6/22",
+      maxHours:0, contractLabel:"", contractEff:"",
+      funds:[
+        {id:id(),name:"Health Care",            rate:9.28, basis:"hr", mgmt:true},
+        {id:id(),name:"Pension",                rate:6.81, basis:"hr", mgmt:false},
+        {id:id(),name:"Retiree Benefit",        rate:0,    basis:"hr", mgmt:false},
+        {id:id(),name:"Vacation & Holiday",     rate:0,    basis:"pct",mgmt:false},
+        {id:id(),name:"Supplemental Vacation",  rate:0,    basis:"hr", mgmt:false},
+        {id:id(),name:"Apprentice & Training",  rate:0.15, basis:"hr", mgmt:false},
+        {id:id(),name:"IUOE NTF",               rate:0,    basis:"hr", mgmt:false},
+        {id:id(),name:"Advancement or Promotion",rate:0,   basis:"hr", mgmt:false},
+        {id:id(),name:"324 Labor Mgmt Education",rate:0,   basis:"hr", mgmt:false},
+        {id:id(),name:"Industry Labor Mgmt Fund",rate:0,   basis:"hr", mgmt:false},
+        {id:id(),name:"Defined Contribution Plan",rate:0,  basis:"hr", mgmt:false}
+      ]
+    },
+    employees:[
+      {id:jId,   name:"Forbes, Jeremy",  ssn:"",            type:"hourly",   coverage:"union", hpd:8, clericalWeekly:125},
+      {id:kId,   name:"Kertscher, Jeff", ssn:"",            type:"hourly",   coverage:"union", hpd:8, clericalWeekly:0},
+      {id:bId,   name:"Johnson, Bode",   ssn:"",            type:"hourly",   coverage:"union", hpd:8, clericalWeekly:0},
+      {id:leeId,  name:"Woods, Lee T",  ssn:"366-62-9828", type:"salaried", coverage:"mgmt",  hpd:8, clericalWeekly:0}
+    ],
+    months:{}, currentMonth:thisMonth, filings:[], forms:[], contractHistory:[],
+    migratedHourlyV3:true, migratedMgmtV4:true, migratedJuneV5:true
+  };
+  data.months["2026-06"]={};
+  data.months["2026-06"][leeId]={worked:0,sick:0,vac:0,salHours:173.35,base:0};
+  data.months["2026-06"][jId]={worked:173.5,sick:0,vac:0,salHours:0,base:0};
+  data.months["2026-06"][kId]={worked:163.75,sick:0,vac:0,salHours:0,base:0};
+  data.months["2026-06"][bId]={worked:168.75,sick:0,vac:0,salHours:0,base:0};
+  return data;
+}
+var S=load()||fresh();
+if(!S.currentMonth)S.currentMonth=thisMonth;
+function persist(){store(S);}
+/* one-time: Shop Agreement employees are hourly (time-clock based) */
+if(!S.migratedHourlyV3){ (S.employees||[]).forEach(function(e){e.type="hourly";}); S.migratedHourlyV3=true; persist(); }
+/* one-time: management / non-union coverage + Lee Woods (health care only) */
+if(!S.migratedMgmtV4){
+  (S.settings.funds||[]).forEach(function(f){ if(f.mgmt===undefined) f.mgmt=/health/i.test(f.name); });
+  (S.employees||[]).forEach(function(e){ if(!e.coverage) e.coverage="union"; });
+  var hasWoods=(S.employees||[]).some(function(e){return /wood/i.test(e.name);});
+  if(!hasWoods){
+    var leeId=id();
+    S.employees.push({id:leeId,name:"Woods, Lee T",ssn:"366-62-9828",type:"salaried",coverage:"mgmt",hpd:8});
+    if(!S.months["2026-06"])S.months["2026-06"]={};
+    S.months["2026-06"][leeId]={worked:0,sick:0,vac:0,salHours:173.35,base:0};
+  }
+  S.migratedMgmtV4=true; persist();
+}
+/* one-time: June 2026 union hours + Jeremy clerical ($/wk, payroll-only) + payWeeks */
+if(!S.migratedJuneV5){
+  if(S.settings.payWeeks==null) S.settings.payWeeks=4;
+  (S.employees||[]).forEach(function(e){ if(e.clericalWeekly==null) e.clericalWeekly=0; });
+  var jun=S.months["2026-06"]||(S.months["2026-06"]={});
+  function findEmp(re){return (S.employees||[]).find(function(e){return re.test(e.name);});}
+  var seed=[[/forbes|jeremy/i,173.5,125],[/kertscher|jeff/i,163.75,0],[/johnson|bode/i,168.75,0]];
+  seed.forEach(function(row){
+    var e=findEmp(row[0]); if(!e) return;
+    if(!jun[e.id]) jun[e.id]={worked:0,sick:0,vac:0,salHours:0,base:0};
+    if(!(Number(jun[e.id].worked)>0)) jun[e.id].worked=row[1];   // don't clobber hours already entered
+    if(!(Number(e.clericalWeekly)>0)) e.clericalWeekly=row[2];   // don't clobber clerical already set
+  });
+  S.migratedJuneV5=true; persist();
+}
+/* one-time: pay-period model (week-ending day + per-month start/end; June seeded) */
+if(!S.migratedPeriodV6){
+  if(S.settings.weekEndDay==null) S.settings.weekEndDay=6;
+  if(!S.settings.periods) S.settings.periods={};
+  if(!S.settings.periods["2026-06"]) S.settings.periods["2026-06"]={start:"2026-05-24",end:"2026-06-20"};
+  S.migratedPeriodV6=true; persist();
+}
+/* one-time: reminder email recipient */
+if(!S.migratedReminderV7){
+  if(!S.settings.reminderTo) S.settings.reminderTo="vickisaul@me.com";
+  S.migratedReminderV7=true; persist();
+}
+/* one-time: hard-lock periods to the last-Friday rule (drop seeded overrides that equal the rule) */
+if(!S.migratedRuleV8){
+  if(S.settings.periods){
+    Object.keys(S.settings.periods).forEach(function(m){
+      var ov=S.settings.periods[m], a=autoPeriod(m);
+      if(ov&&a&&ov.start===a.start&&ov.end===a.end) delete S.settings.periods[m];
+    });
+  }
+  S.migratedRuleV8=true; persist();
+}
+/* one-time: filings history store */
+if(!S.migratedFilingsV9){
+  if(!Array.isArray(S.filings)) S.filings=[];
+  S.migratedFilingsV9=true; persist();
+}
+/* one-time: no contractual hours minimum — clear the floor */
+if(!S.migratedNoMinV10){
+  S.settings.minHours=0;
+  S.migratedNoMinV10=true; persist();
+}
+/* one-time: form library + editable revision */
+if(!S.migratedFormsV11){
+  if(!Array.isArray(S.forms)) S.forms=[];
+  if(!S.settings.formNo) S.settings.formNo="Form 3022 \u00b7 Remittance Report";
+  if(!S.settings.formRev) S.settings.formRev="REV. 6/22";
+  S.migratedFormsV11=true; persist();
+}
+/* one-time: contract update tab */
+if(!S.migratedContractV12){
+  if(!Array.isArray(S.contractHistory)) S.contractHistory=[];
+  if(S.settings.maxHours==null) S.settings.maxHours=0;
+  if(S.settings.contractLabel==null) S.settings.contractLabel="";
+  if(S.settings.contractEff==null) S.settings.contractEff="";
+  S.migratedContractV12=true; persist();
+}
+function monthData(){if(!S.months[S.currentMonth])S.months[S.currentMonth]={};return S.months[S.currentMonth];}
+function entry(eid){var m=monthData();if(!m[eid])m[eid]={worked:0,sick:0,vac:0,salHours:0,base:0};return m[eid];}
+
+/* ---------- calc ---------- */
+function hpdFor(emp){var v=(emp.hpd!=null&&emp.hpd!=="")?Number(emp.hpd):8;return isFinite(v)?v:8;}
+function fundApplies(emp,f){ return ((emp.coverage||"union")==="union") ? true : (f.mgmt===true); }
+function calcEmp(emp){
+  var e=entry(emp.id), hpd=hpdFor(emp);
+  var isUnion=(emp.coverage||"union")==="union";
+  var raw, worked=0, sickH=0, vacH=0, sickD=0, vacD=0;
+  if(emp.type==="salaried"){ raw=Number(e.salHours)||0; }
+  else{
+    worked=Number(e.worked)||0; sickD=Number(e.sick)||0; vacD=Number(e.vac)||0;
+    sickH=sickD*hpd; vacH=vacD*hpd; raw=worked+sickH+vacH;
+  }
+  var floor=(S.settings.minHours!=null&&S.settings.minHours!=="")?Number(S.settings.minHours):0;
+  var floored=false, hours=raw;
+  if(isUnion && raw>0 && floor>0 && raw<floor){ hours=floor; floored=true; }
+  var cap=(S.settings.maxHours!=null&&S.settings.maxHours!=="")?Number(S.settings.maxHours):0;
+  var capped=false;
+  if(cap>0 && hours>cap){ hours=cap; capped=true; }
+  var base=Number(e.base)||0;
+  var fundAmts={}, total=0;
+  S.settings.funds.forEach(function(f){
+    var rate=Number(f.rate)||0, amt=0;
+    if(rate>0 && fundApplies(emp,f)){
+      if(f.basis==="hr") amt=hours*rate;
+      else if(f.basis==="pct") amt=base*(rate/100);
+      else if(f.basis==="flat") amt=hours>0?rate:0;
+    }
+    fundAmts[f.id]=amt; total+=amt;
+  });
+  return {raw:raw,hours:hours,floored:floored,capped:capped,isUnion:isUnion,worked:worked,sickH:sickH,vacH:vacH,sickD:sickD,vacD:vacD,
+          base:base,hpd:hpd,fundAmts:fundAmts,total:total};
+}
+function activeFunds(){return S.settings.funds.filter(function(f){return (Number(f.rate)||0)>0;});}
+function totals(){
+  var t={hours:0,base:0,total:0,fund:{},fundHours:{},fundBase:{},fundCount:{},count:0};
+  activeFunds().forEach(function(f){t.fund[f.id]=0;t.fundHours[f.id]=0;t.fundBase[f.id]=0;t.fundCount[f.id]=0;});
+  S.employees.forEach(function(emp){
+    var c=calcEmp(emp); if(c.hours<=0 && c.base<=0) return;
+    t.count++; t.hours+=c.hours; t.base+=c.base; t.total+=c.total;
+    activeFunds().forEach(function(f){
+      t.fund[f.id]+=c.fundAmts[f.id]||0;
+      if(fundApplies(emp,f)){ t.fundHours[f.id]+=c.hours; t.fundBase[f.id]+=c.base; if(c.hours>0)t.fundCount[f.id]++; }
+    });
+  });
+  return t;
+}
+
+/* ---------- coverage-filtered + multi-month aggregation ---------- */
+function coverageTotals(coverage){ /* coverage: "union" | "mgmt" | "all" */
+  var t={hours:0,total:0,count:0,fund:{},fundHours:{},fundCount:{},emps:[]};
+  activeFunds().forEach(function(f){t.fund[f.id]=0;t.fundHours[f.id]=0;t.fundCount[f.id]=0;});
+  S.employees.forEach(function(emp){
+    if(coverage!=="all" && (emp.coverage||"union")!==coverage) return;
+    var c=calcEmp(emp); if(c.hours<=0 && c.base<=0) return;
+    t.count++; t.hours+=c.hours; t.total+=c.total; t.emps.push({name:emp.name,hours:c.hours,total:c.total});
+    activeFunds().forEach(function(f){
+      t.fund[f.id]+=c.fundAmts[f.id]||0;
+      if(fundApplies(emp,f)){ t.fundHours[f.id]+=c.hours; if(c.hours>0)t.fundCount[f.id]++; }
+    });
+  });
+  return t;
+}
+function monthsInRange(){
+  var type=(document.getElementById("sumRange")||{}).value||"month";
+  var out=[], i;
+  function ym(y,mi){return y+"-"+String(mi+1).padStart(2,"0");}
+  if(type==="month"){ out=[(document.getElementById("sumMonth")||{}).value||S.currentMonth]; }
+  else if(type==="year"){ var y=Number((document.getElementById("sumYear")||{}).value)||new Date().getFullYear(); for(i=0;i<12;i++)out.push(ym(y,i)); }
+  else if(type==="quarter"){ var qy=Number((document.getElementById("sumYear")||{}).value)||new Date().getFullYear(); var q=Number((document.getElementById("sumQtr")||{}).value)||1; var s=(q-1)*3; for(i=0;i<3;i++)out.push(ym(qy,s+i)); }
+  else if(type==="custom"){
+    var a=(document.getElementById("sumFrom")||{}).value, b=(document.getElementById("sumTo")||{}).value;
+    if(!a||!b) return [];
+    if(a>b){var tmp=a;a=b;b=tmp;}
+    var ap=a.split("-"), bp=b.split("-");
+    var cy=Number(ap[0]), cm=Number(ap[1])-1, ey=Number(bp[0]), em=Number(bp[1])-1, guard=0;
+    while((cy<ey || (cy===ey && cm<=em)) && guard++<240){ out.push(ym(cy,cm)); cm++; if(cm>11){cm=0;cy++;} }
+  }
+  return out;
+}
+function rangeReport(monthKeys, coverage){
+  var funds=activeFunds();
+  var perEmp={}, fundTot={}, fundHours={}, grand=0, totHours=0, monthsUsed=[];
+  funds.forEach(function(f){fundTot[f.id]=0;fundHours[f.id]=0;});
+  S.employees.forEach(function(e){ if(coverage!=="all"&&(e.coverage||"union")!==coverage)return; perEmp[e.id]={name:e.name,hours:0,total:0,fundAmts:{}}; funds.forEach(function(f){perEmp[e.id].fundAmts[f.id]=0;}); });
+  var save=S.currentMonth;
+  try{
+    monthKeys.forEach(function(mk){
+      if(!S.months[mk]) return;           /* skip months with no data; no mutation */
+      monthsUsed.push(mk);
+      S.currentMonth=mk;
+      S.employees.forEach(function(emp){
+        if(coverage!=="all"&&(emp.coverage||"union")!==coverage)return;
+        var c=calcEmp(emp); if(c.hours<=0&&c.base<=0)return;
+        var pe=perEmp[emp.id]; pe.hours+=c.hours; pe.total+=c.total;
+        funds.forEach(function(f){ pe.fundAmts[f.id]+=c.fundAmts[f.id]||0; fundTot[f.id]+=c.fundAmts[f.id]||0; if(fundApplies(emp,f))fundHours[f.id]+=c.hours; });
+        grand+=c.total; totHours+=c.hours;
+      });
+    });
+  } finally { S.currentMonth=save; }
+  return {funds:funds,perEmp:perEmp,fundTot:fundTot,fundHours:fundHours,grand:grand,totHours:totHours,monthsAll:monthKeys,monthsUsed:monthsUsed};
+}
+function ymLabel(mk){var p=String(mk).split("-");if(p.length<2)return mk;return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString("en-US",{month:"short",year:"numeric"});}
+
+/* ---------- format ---------- */
+function money(n){return (Number(n)||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function money0(n){return "$"+(Number(n)||0).toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:0});}
+function hrs(n){var v=Number(n)||0;return (Math.round(v*100)/100).toLocaleString("en-US",{maximumFractionDigits:2});}
+function monthName(){return new Date(S.currentMonth+"-01T00:00").toLocaleDateString("en-US",{month:"long",year:"numeric"});}
+function parseD(s){if(!s)return null;var p=String(s).split("-");if(p.length<3)return null;return new Date(Number(p[0]),Number(p[1])-1,Number(p[2]));}
+function fmtD(s){var d=parseD(s);return d?d.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";}
+function isoD(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function lastWeekdayOfMonth(y,mi,wd){var d=new Date(y,mi+1,0);while(d.getDay()!==wd)d.setDate(d.getDate()-1);return d;}
+function firstWeekdayOfMonth(y,mi,wd){var d=new Date(y,mi,1);while(d.getDay()!==wd)d.setDate(d.getDate()+1);return d;}
+/* Hard-lock rule: weeks run Sun–Sat, paid the following Friday. Reporting month = the weeks
+   whose pay-Friday falls in the month. Period ends the Saturday before the LAST Friday;
+   starts the Sunday opening the week paid on the FIRST Friday. */
+function autoPeriod(m){
+  var p=String(m||"").split("-"); if(p.length<2)return null;
+  var y=Number(p[0]), mi=Number(p[1])-1; if(isNaN(y)||isNaN(mi))return null;
+  var lastFri=lastWeekdayOfMonth(y,mi,5), firstFri=firstWeekdayOfMonth(y,mi,5);
+  var end=new Date(lastFri); end.setDate(end.getDate()-6);
+  var start=new Date(firstFri); start.setDate(start.getDate()-12);
+  return {start:isoD(start), end:isoD(end), auto:true};
+}
+function periodFor(m){var ov=(S.settings.periods&&S.settings.periods[m]);if(ov&&ov.start&&ov.end)return ov;return autoPeriod(m);}
+
+/* ---------- holidays (send-early awareness) ---------- */
+function nthWeekdayOfMonth(y,mi,wd,n){var d=new Date(y,mi,1);d.setDate(1+((wd-d.getDay()+7)%7)+(n-1)*7);return d;}
+function observedHoliday(d){var x=new Date(d),g=x.getDay();if(g===6)x.setDate(x.getDate()-1);else if(g===0)x.setDate(x.getDate()+1);return x;}
+function federalHolidays(y){
+  var H=[];function add(n,d){H.push({name:n,obs:observedHoliday(d)});}
+  add("New Year\u2019s Day",new Date(y,0,1));
+  add("MLK Day",nthWeekdayOfMonth(y,0,1,3));
+  add("Presidents\u2019 Day",nthWeekdayOfMonth(y,1,1,3));
+  add("Memorial Day",lastWeekdayOfMonth(y,4,1));
+  add("Juneteenth",new Date(y,5,19));
+  add("Independence Day",new Date(y,6,4));
+  add("Labor Day",nthWeekdayOfMonth(y,8,1,1));
+  add("Columbus Day",nthWeekdayOfMonth(y,9,1,2));
+  add("Veterans Day",new Date(y,10,11));
+  add("Thanksgiving",nthWeekdayOfMonth(y,10,4,4));
+  add("Christmas",new Date(y,11,25));
+  return H;
+}
+/* Fridays in the calendar month whose pay date is a federal holiday -> send early.
+   Also flags the Thursday-before holiday (e.g. Thanksgiving) as a short week. */
+function holidayFridaysInMonth(mk){
+  var p=String(mk||"").split("-"); if(p.length<2)return [];
+  var y=Number(p[0]), mi=Number(p[1])-1; if(isNaN(y)||isNaN(mi))return [];
+  var H=federalHolidays(y), out=[];
+  var d=new Date(y,mi,1); while(d.getDay()!==5)d.setDate(d.getDate()+1); /* first Friday */
+  for(; d.getMonth()===mi; d.setDate(d.getDate()+7)){
+    var friISO=isoD(d), thu=new Date(d); thu.setDate(thu.getDate()-1); var thuISO=isoD(thu);
+    var onFri=null,onThu=null;
+    H.forEach(function(h){var o=isoD(h.obs); if(o===friISO)onFri=h.name; else if(o===thuISO)onThu=h.name;});
+    if(onFri||onThu){
+      var sb=new Date(d); sb.setDate(sb.getDate()-2); /* Wednesday */
+      out.push({fri:friISO, name:onFri||onThu, when:onFri?"Friday":"Thursday", sendBy:isoD(sb)});
+    }
+  }
+  return out;
+}
+function shortMD(iso){var d=parseD(iso);return d?d.toLocaleDateString("en-US",{weekday:"short",month:"numeric",day:"numeric"}):iso;}
+function periodWeeks(m){var p=periodFor(m);if(p&&p.start&&p.end){var a=parseD(p.start),b=parseD(p.end);if(a&&b){var w=Math.round(((b-a)/86400000+1)/7);if(w>0)return w;}}return Number(S.settings.payWeeks)||0;}
+function periodLabel(m){var p=periodFor(m);if(p&&p.start&&p.end)return "weeks of "+fmtD(p.start)+" \u2013 "+fmtD(p.end);return "";}
+function periodHintHTML(){
+  var m=S.currentMonth, w=periodWeeks(m), pl=periodLabel(m);
+  if(!pl) return "No period for "+monthName()+".";
+  var ov=!!(S.settings.periods&&S.settings.periods[m]&&S.settings.periods[m].start&&S.settings.periods[m].end);
+  var tag=ov?"<span style=\"color:#b35\">manual override</span>":"auto &middot; last-Friday rule";
+  return "<b>"+monthName()+":</b> "+pl+" &middot; <b>"+w+"</b> pay week"+(w===1?"":"s")+" &middot; "+tag+" (used for clerical)";
+}
+window.autoFillPeriod=function(){
+  if(S.settings.periods) delete S.settings.periods[S.currentMonth];
+  persist(); renderAll();
+};
+function setPeriod(field,val){
+  if(!S.settings.periods)S.settings.periods={};
+  var m=S.currentMonth;
+  if(!S.settings.periods[m])S.settings.periods[m]={start:"",end:""};
+  S.settings.periods[m][field]=val||"";
+  if(!S.settings.periods[m].start && !S.settings.periods[m].end) delete S.settings.periods[m];
+  persist();
+  var ph=document.getElementById("periodHint");
+  if(ph){ ph.innerHTML=periodHintHTML(); }
+  renderPrint();
+}
+
+/* ---------- render ---------- */
+function renderAll(){
+  document.getElementById("hdrEmployer").textContent=S.settings.employer||"Fringe Remittance";
+  document.getElementById("monthInput").value=S.currentMonth;
+  renderHero();renderReport();renderPrint();renderEmployees();renderSetup();
+}
+function renderHero(){
+  var t=totals();
+  document.getElementById("heroAmt").textContent=money(t.total);
+  document.getElementById("heroLbl").textContent=(S.settings.employer||"Employer")+" — "+monthName()+(periodLabel(S.currentMonth)?(" \u00b7 "+periodLabel(S.currentMonth)):"");
+  var b=document.getElementById("heroBreak"),h="";
+  h+='<div><div class="k">Paid hours</div><div class="v num">'+hrs(t.hours)+'</div></div>';
+  activeFunds().slice(0,4).forEach(function(f){
+    h+='<div><div class="k">'+esc(shortName(f.name))+'</div><div class="v num">'+money0(t.fund[f.id])+'</div></div>';
+  });
+  b.innerHTML=h;
+}
+function shortName(n){return n.replace("Apprentice & Training","Training").replace("Health Care","Health").replace(" & Holiday","");}
+
+function renderReport(){
+  var hm=document.getElementById("hintMin"); if(hm){var mh=(S.settings.minHours!=null&&S.settings.minHours!=="")?Number(S.settings.minHours):0; hm.textContent=mh>0?(hrs(mh)+" hrs"):"no minimum";}
+  var box=document.getElementById("reportList");
+  if(!S.employees.length){box.innerHTML='<div class="empty">No employees yet. Add them on the Employees tab.</div>';return;}
+  var html="";
+  S.employees.forEach(function(emp){
+    var e=entry(emp.id),c=calcEmp(emp),sal=emp.type==="salaried";
+    html+='<div class="emp-card'+(c.floored?' floored':'')+'">'
+      +'<div class="top"><span class="nm">'+esc(emp.name)+' <span class="pill '+(sal?'sal':'hr')+'">'+(sal?'Monthly':'Hourly')+'</span>'+(c.isUnion?'':' <span class="pill mgmt">Mgmt · health only</span>')+'</span>'
+      +'<span class="hrs">'+hrs(c.hours)+' hrs'+(c.floored?' <span class="pill floor">min</span>':'')+(c.capped?' <span class="pill floor">cap</span>':'')+'</span></div>';
+    if(sal){
+      html+='<div class="ins sal">'
+        +cell("Hours paid (month)",emp.id,"salHours",e.salHours)
+        +cell("Base wages $ (opt.)",emp.id,"base",e.base)
+      +'</div>';
+    }else{
+      html+='<div class="ins hr">'
+        +cell("Worked hrs",emp.id,"worked",e.worked)
+        +cell("Sick days",emp.id,"sick",e.sick)
+        +cell("Vacation days",emp.id,"vac",e.vac)
+        +cell("Base wages $",emp.id,"base",e.base)
+      +'</div>'
+      +'<div class="calc"><span>Worked <b>'+hrs(c.worked)+'</b></span><span>Sick <b>'+hrs(c.sickH)+'</b></span>'
+        +'<span>Vac <b>'+hrs(c.vacH)+'</b></span><span>@ <b>'+hrs(c.hpd)+'</b>/day</span></div>';
+    }
+    // fund amounts line
+    var fl='<div class="calc">';
+    activeFunds().forEach(function(f){ if(!fundApplies(emp,f))return; fl+='<span>'+esc(shortName(f.name))+' <b>$'+money(c.fundAmts[f.id])+'</b></span>'; });
+    fl+='<span>Total <b style="color:var(--brass)">$'+money(c.total)+'</b></span></div>';
+    html+=fl+'</div>';
+  });
+  box.innerHTML=html;
+  var floor=S.settings.minHours;
+  document.getElementById("floorNote").innerHTML=(floor?('Shop minimum of <b>'+hrs(floor)+'</b> hours applied to anyone reported below it.'):'No monthly minimum set.')+
+    ' Overtime is contributed as straight hours (1 = 1), per the fund notice.';
+}
+function cell(lbl,eid,key,val){
+  return '<div class="field"><label>'+lbl+'</label><input type="number" min="0" step="0.01" value="'+(val||val===0?val:"")+'" data-emp="'+eid+'" data-key="'+key+'" oninput="onInput(this)"></div>';
+}
+window.onInput=function(inp){
+  var e=entry(inp.dataset.emp);var v=inp.value===""?0:Number(inp.value);
+  e[inp.dataset.key]=isFinite(v)?v:0;persist();renderHero();
+};
+document.getElementById("reportList").addEventListener("change",function(){renderReport();renderPrint();});
+
+function fundsForCoverage(cov){
+  return activeFunds().filter(function(f){ return cov==="mgmt" ? f.mgmt===true : true; });
+}
+function empsByCoverage(cov){
+  return S.employees.filter(function(e){ return (e.coverage||"union")===cov; });
+}
+function groupTotals(cov){
+  var funds=fundsForCoverage(cov), list=empsByCoverage(cov);
+  var t={hours:0,base:0,total:0,fund:{},fundHours:{},fundBase:{},fundCount:{},count:0};
+  funds.forEach(function(f){t.fund[f.id]=0;t.fundHours[f.id]=0;t.fundBase[f.id]=0;t.fundCount[f.id]=0;});
+  list.forEach(function(emp){
+    var c=calcEmp(emp); if(c.hours<=0 && c.base<=0) return;
+    t.count++; t.hours+=c.hours; t.base+=c.base; t.total+=c.total;
+    funds.forEach(function(f){
+      t.fund[f.id]+=c.fundAmts[f.id]||0;
+      if(fundApplies(emp,f)){ t.fundHours[f.id]+=c.hours; t.fundBase[f.id]+=c.base; if(c.hours>0)t.fundCount[f.id]++; }
+    });
+  });
+  return {t:t,funds:funds,list:list};
+}
+function monthMY(){var p=String(S.currentMonth||thisMonth).split("-");return (parseInt(p[1],10))+"/"+p[0];}
+function formP1(cov,title){
+  var s=S.settings, g=groupTotals(cov);
+  var pf={},ph={},pb={};
+  S.settings.funds.forEach(function(f){pf[f.id]=0;ph[f.id]=0;pb[f.id]=0;});
+  g.list.forEach(function(emp){var c=calcEmp(emp); if(c.hours<=0&&c.base<=0)return;
+    S.settings.funds.forEach(function(f){ if(fundApplies(emp,f)){ pf[f.id]+=c.fundAmts[f.id]||0; ph[f.id]+=c.hours; pb[f.id]+=c.base; } });
+  });
+  function applies(f){ return cov==="mgmt" ? f.mgmt===true : true; }
+  var active=(s.agreement||"S");
+  var agtBody="";
+  AGREEMENTS.forEach(function(a){
+    var on=(a.sub===active);
+    agtBody+='<tr'+(on?' class="agon"':'')+'>'
+      +'<td class="sec">'+(a.sec||"")+'</td>'
+      +'<td class="mk">'+(on?"X":"")+'</td>'
+      +'<td class="agn">'+esc(a.name)+'</td>'
+      +'<td class="ac">'+esc(a.eff||"")+'</td>';
+    a.r.forEach(function(v){ agtBody+='<td class="ac">'+v+'</td>'; });
+    agtBody+='</tr>';
+  });
+  var remit="";
+  S.settings.funds.forEach(function(f){
+    var on=applies(f)&&Number(f.rate)>0&&((f.basis==="pct"?pb[f.id]:ph[f.id])>0);
+    remit+='<tr>'
+      +'<td class="rf">'+esc(f.name.toUpperCase())+'</td>'
+      +'<td class="rr">'+(on?"$"+money(f.rate):"")+'</td>'
+      +'<td class="rx">'+(on?"x":"")+'</td>'
+      +'<td class="rm">'+(on?(f.basis==="pct"?money(pb[f.id]):hrs(ph[f.id])):"")+'<div class="msub">'+(f.basis==="pct"?"BASE WAGES":"PAID HOURS")+'</div></td>'
+      +'<td class="ra">'+(on?"$"+money(pf[f.id]):"")+'</td>'
+      +'<td class="radj"></td>'
+      +'<td class="rt">'+(on?"$"+money(pf[f.id]):"")+'</td>'
+    +'</tr>';
+  });
+  return '<div class="gform p1">'
+    +'<div class="ghdr">'
+      +'<div class="hbox hb-left">'
+        +'<div class="tiny">Federal law requires each employer to furnish the following information:</div>'
+        +'<div class="chk"><span class="box"></span> We had no employees performing work covered by our Oper. Eng. Local 324 agreement(s) during the month.</div>'
+        +'<div class="chk"><span class="box"></span> Final Report &ndash; Inactive Status request</div>'
+      +'</div>'
+      +'<div class="hbox hb-mid">'
+        +'<div class="bigttl">OPERATING ENGINEERS</div>'
+        +'<div class="midttl">Local 324 Fringe Benefit Funds</div>'
+        +'<div class="subttl">ALL CONTRIBUTIONS ARE DUE BY THE 15th</div>'
+        +'<div class="subttl">OF THE MONTH FOLLOWING THE MONTH WORKED</div>'
+      +'</div>'
+      +'<div class="hbox hb-right">'
+        +'<div class="tiny">'+esc(s.formNo||"Form 3022 \u00b7 Remittance Report")+'</div>'
+        +'<div class="rev">'+esc(s.formRev||"REV. 6/22")+'</div>'
+        +'<div class="tiny">Employers Monthly Fringe Benefit Report</div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="grow">'
+      +'<div class="gc gc-name"><span class="lab">Name of Company</span><span class="v">'+esc(s.employer)+'</span></div>'
+      +'<div class="gc"><span class="lab">Contractor Code Number</span><span class="v">'+esc(s.code)+'</span></div>'
+      +'<div class="gc"><span class="lab">Work Month (Month/Year)</span><span class="v">'+esc(monthMY())+'</span></div>'
+    +'</div>'
+    +'<div class="grow">'
+      +'<div class="gc gc-name"><span class="lab">Address</span><span class="v">'+esc(s.addr)+'</span></div>'
+      +'<div class="gc"><span class="lab">Telephone</span><span class="v">'+esc(s.phone)+'</span></div>'
+      +'<div class="gc"><span class="lab">Employer Identification Number (EIN)</span><span class="v">'+esc(s.ein)+'</span></div>'
+    +'</div>'
+    +'<div class="grow">'
+      +'<div class="gc gc-name"><span class="lab">City and State / ZIP</span><span class="v">'+esc(s.city)+'</span></div>'
+      +'<div class="gc"><span class="lab">Special Agmt / Job Site (if applicable)</span><span class="v"></span></div>'
+      +'<div class="gc"><span class="lab">NMA / GPPMA</span><span class="v"></span></div>'
+    +'</div>'
+    +'<div class="band">Type or Area of Construction and Fringe Benefit Rates</div>'
+    +'<div class="bandsub">Please mark the appropriate agreement. The agreement being reported is marked &ldquo;X&rdquo; below.</div>'
+    +'<table class="agt"><thead><tr>'
+      +'<th class="sec">Sec</th><th class="mk">X</th><th class="agn">Agreement</th><th>Eff.<br>Date</th>'
+      +'<th>Health<br>Care</th><th>Pension</th><th>Retiree<br>Benefit</th><th>Vac. &amp;<br>Holiday</th>'
+      +'<th>Suppl.<br>Vac.</th><th>Appr. &amp;<br>Train.</th><th>IUOE<br>NTF</th><th>Ind. Adv.<br>&amp; Promo</th>'
+      +'<th>324<br>LMEC</th><th>Ind. Lbr<br>Mgmt</th><th>Def.<br>Contrib.</th>'
+    +'</tr></thead><tbody>'+agtBody+'</tbody></table>'
+    +'<div class="band band2">Remittance</div>'
+    +'<table class="remt"><thead><tr><th class="rf">Fringe Benefit Fund</th><th class="rr">Contribution Rate</th><th class="rx"></th><th class="rm">Multiplier<br>(Total Hrs / Wgs)</th><th class="ra">Amount</th><th class="radj">Adjustments</th><th class="rt">Total</th></tr></thead>'
+    +'<tbody>'+remit+'</tbody>'
+    +'<tfoot><tr><td colspan="6" class="grl">Remittance &ndash; Make Check Payable To: Operating Engineers Fringe Benefit Funds</td><td class="rt grt">$'+money(g.t.total)+'</td></tr></tfoot></table>'
+    +'<div class="mailrow">'
+      +'<div class="mailto"><b>Please mail original copy with check to:</b><br>Operating Engineers Local 324 Fringe Benefit Funds<br>550 Hulet Dr. Suite 103<br>Bloomfield Twp., MI 48302</div>'
+      +'<div class="packetnote">'+esc(title)+(cov==="mgmt"?" &mdash; Health Care only (non-union / management)":"")+'</div>'
+    +'</div>'
+  +'</div>';
+}
+function formP2(cov){
+  var s=S.settings, g=groupTotals(cov);
+  var rows="",th=0,tb=0,n=0;
+  g.list.forEach(function(emp){
+    var c=calcEmp(emp); if(c.hours<=0&&c.base<=0) return;
+    n++; th+=c.hours; tb+=c.base;
+    rows+='<tr><td class="ln">'+esc(lastName(emp.name))+'</td><td class="ini">'+esc(initials(emp.name))+'</td><td class="ssn">'+maskSSN(emp.ssn)+'</td><td class="hp">'+hrs(c.hours)+'</td><td class="bw">'+(c.base?money(c.base):"")+'</td></tr>';
+  });
+  var target=24;
+  for(var i=n;i<target;i++){ rows+='<tr><td class="ln">&nbsp;</td><td class="ini"></td><td class="ssn"></td><td class="hp"></td><td class="bw"></td></tr>'; }
+  return '<div class="gform p2">'
+    +'<div class="p2title">Operating Engineers Local 324 Fringe Benefit Funds</div>'
+    +'<div class="p2meta">'
+      +'<div class="gc gc-name"><span class="lab">Contractor&rsquo;s Name</span><span class="v">'+esc(s.employer)+'</span></div>'
+      +'<div class="gc"><span class="lab">Contractor Number</span><span class="v">'+esc(s.code)+'</span></div>'
+      +'<div class="gc"><span class="lab">Work Month</span><span class="v">'+esc(monthName())+'</span></div>'
+      +'<div class="gc gc-pg"><span class="lab">Pages</span><span class="v">1</span></div>'
+    +'</div>'
+    +'<div class="p2body">'
+      +'<table class="dett"><thead><tr><th class="ln">Employee&rsquo;s Name &ndash; Last Name</th><th class="ini">Initials</th><th class="ssn">Social Security Number</th><th class="hp">A<br>Hours Paid</th><th class="bw">B<br>Base Wages</th></tr></thead>'
+      +'<tbody>'+rows+'</tbody>'
+      +'<tfoot><tr><td colspan="3" class="totlbl">Totals This Sheet</td><td class="hp">'+hrs(th)+'</td><td class="bw">'+(tb?money(tb):"")+'</td></tr></tfoot></table>'
+      +'<div class="p2side">'
+        +'<div class="sidettl">Instructions</div>'
+        +'<div class="sidep">Report each Operating Engineer employed during the month, listing hours paid. For combined work under two or more agreements, report under the appropriate section.</div>'
+        +'<div class="sidep">Payments are due by the 15th of the following month. Late payments are subject to liquidated damages and interest.</div>'
+        +'<div class="sidenotice">NOTICE: For fringe benefit contribution purposes, an overtime hour is contributed as one hour. This does not pertain to the Vacation &amp; Holiday Fund.</div>'
+        +'<div class="sideimp">By filing this report, the above named Employer certifies the accuracy of the information and agrees to be bound by all terms of payment to the named Funds as set forth in the current applicable Collective Bargaining Agreements and Trust Agreements.</div>'
+        +'<div class="sig"><div class="sigline">'+esc(s.signer||"Vicki Saul")+'</div><div class="siglab">Employer or Authorized Agent</div><div class="sigtitle">'+esc(s.signerTitle||"V.P. / Sec. / Treas.")+'</div></div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+function packetHTML(cov,title,sub){
+  return formP1(cov,title)+formP2(cov);
+}
+function renderPrint(){
+  var u=document.getElementById("packetUnion"); if(!u) return;
+  u.innerHTML=packetHTML("union","Shop Agreement Report","");
+  document.getElementById("packetMgmt").innerHTML=packetHTML("mgmt","Salary Report","Non-union / management — health care contribution only.");
+  var gu=groupTotals("union").t, gm=groupTotals("mgmt").t;
+  var su=document.getElementById("sumUnion"); if(su) su.textContent=gu.count+" employee"+(gu.count===1?"":"s")+" \u00b7 $"+money(gu.total)+" due";
+  var sm=document.getElementById("sumMgmt"); if(sm) sm.textContent=gm.count+" employee"+(gm.count===1?"":"s")+" \u00b7 $"+money(gm.total)+" due";
+  var pt=document.getElementById("payTo"); if(pt){var pl=periodLabel(S.currentMonth);pt.textContent=((S.settings.payrollTo||"").trim()?("To "+S.settings.payrollTo):"Add Avery\u2019s email in Setup")+(pl?(" \u00b7 "+pl):"");}
+  /* holiday send-early note for the work month */
+  var hn=document.getElementById("holidayNote");
+  var hf=holidayFridaysInMonth(S.currentMonth);
+  if(hn){
+    if(hf.length){
+      hn.style.display="";
+      hn.innerHTML="\u26a0\ufe0f <b>Heads up \u2014 send Avery early.</b> "+hf.map(function(h){
+        return (h.when==="Friday"
+          ? ("<b>"+esc(h.name)+"</b> falls on the pay Friday ("+shortMD(h.fri)+")")
+          : ("<b>"+esc(h.name)+"</b> is the Thursday before the pay Friday ("+shortMD(h.fri)+"), a short week"))
+          +" \u2014 get payroll in <b>2\u20133 days early, by "+shortMD(h.sendBy)+"</b>.";
+      }).join("<br>");
+    } else { hn.style.display="none"; hn.innerHTML=""; }
+  }
+  /* Sunday nudge — note this week's holiday if the upcoming Friday is one */
+  var nudge=document.getElementById("sundayNudge");
+  if(nudge){
+    var isSun=(new Date().getDay()===0);
+    nudge.style.display=isSun?"flex":"none";
+    if(isSun){
+      var today=new Date(), fri=new Date(today); fri.setDate(fri.getDate()+((5-fri.getDay()+7)%7));
+      var hit=hf.filter(function(h){return h.fri===isoD(fri);})[0];
+      var msg=nudge.querySelector("div"); if(msg) msg.innerHTML=hit
+        ? ("<b>It\u2019s Sunday \u2014 and "+esc(hit.name)+" is "+shortMD(hit.fri)+".</b> Send this week\u2019s payroll to Avery early (by "+shortMD(hit.sendBy)+").")
+        : "<b>It\u2019s Sunday.</b> Time to send this week\u2019s payroll to Tandem Tax.";
+    }
+  }
+}
+window.printGroup=function(which){
+  var cls=which==="mgmt"?"print-mgmt":"print-union";
+  renderPrint();
+  document.body.classList.add(cls);
+  setTimeout(function(){ window.print(); },60);
+  setTimeout(function(){ document.body.classList.remove("print-union","print-mgmt"); },2000);
+};
+window.addEventListener("afterprint",function(){ document.body.classList.remove("print-union","print-mgmt"); });
+window.exportGroup=function(cov){
+  var g=groupTotals(cov), t=g.t, s=S.settings, L=[];
+  L.push([s.employer,(cov==="mgmt"?"Salary":"Shop Agreement")+" Report — Local 324",monthName()]);
+  L.push(["Contractor",s.code,"EIN",s.ein]); L.push([]);
+  L.push(["Fund","Rate","Basis","Hours/Wages","Amount"]);
+  g.funds.forEach(function(f){
+    var mult=f.basis==="pct"?t.fundBase[f.id]:(f.basis==="flat"?t.fundCount[f.id]:t.fundHours[f.id]);
+    L.push([f.name,f.rate,f.basis,mult,round2(t.fund[f.id])]);
+  });
+  L.push(["TOTAL","","","",round2(t.total)]); L.push([]);
+  L.push(["Last Name","Initials","SSN","Hours Paid","Base Wages"]);
+  var th=0,tb=0;
+  g.list.forEach(function(emp){var c=calcEmp(emp);if(c.hours<=0&&c.base<=0)return;th+=c.hours;tb+=c.base;
+    L.push([lastName(emp.name),initials(emp.name),emp.ssn||"",round2(c.hours),round2(c.base)]);});
+  L.push(["TOTALS","","",round2(th),round2(tb)]);
+  dl((s.employer||"report").replace(/[^a-z0-9]+/gi,"_")+"_"+(cov==="mgmt"?"salary":"shop")+"_"+S.currentMonth+".csv",
+     L.map(function(r){return r.map(cc).join(",");}).join("\n"));
+};
+function pad(str,len){str=String(str);while(str.length<len)str+=" ";return str;}
+function lpad(str,len){str=String(str);while(str.length<len)str=" "+str;return str;}
+function payrollEmailBody(){
+  var s=S.settings, lines=[];
+  var weeks=periodWeeks(S.currentMonth);
+  var plabel=periodLabel(S.currentMonth);
+  lines.push(s.employer+" — Payroll");
+  lines.push("Work month: "+monthName()+(plabel?("  ("+plabel+")"):(weeks?("  ("+weeks+" pay weeks)"):"")));
+  lines.push("Prepared for Tandem Tax (Avery)");
+  lines.push("");
+  lines.push(pad("Employee",26)+lpad("Hours",9));
+  lines.push("----------------------------------");
+  var th=0,n=0,clTotal=0,hasCl=false;
+  S.employees.forEach(function(emp){
+    var c=calcEmp(emp); var cl=(Number(emp.clericalWeekly)||0)*weeks;
+    if(c.hours<=0 && c.base<=0 && cl<=0) return;
+    n++; th+=c.hours;
+    var tag=((emp.coverage||"union")==="mgmt")?" (mgmt)":"";
+    lines.push(pad(emp.name+tag,26)+lpad(hrs(c.hours),9));
+    if(cl>0){ hasCl=true; clTotal+=cl;
+      lines.push(pad("   + clerical (non-pension)",26)+lpad("$"+money(cl),9)+"  ("+weeks+" wk x $"+money(emp.clericalWeekly)+")");
+    }
+  });
+  if(!n) lines.push("(no hours entered for this month yet)");
+  lines.push("----------------------------------");
+  lines.push(pad("Total paid hours",26)+lpad(hrs(th),9));
+  if(hasCl) lines.push(pad("Total clerical (non-pension)",26)+lpad("$"+money(clTotal),9));
+  lines.push("");
+  if(hasCl) lines.push("NOTE: Clerical pay is straight wages and is NOT pension/fringe reportable — it is not included in the Local 324 remittance.");
+  lines.push("Sent from the Northern Tire payroll app. Union Shop Agreement and salary remittance forms available on request.");
+  return lines.join("\n");
+}
+window.emailPayroll=function(){
+  var to=(S.settings.payrollTo||"").trim();
+  if(!to){ alert("Add Avery's email under Setup → Payroll email first."); var b=document.querySelector('nav.tabs button[data-tab="setup"]'); if(b)b.click(); return; }
+  var cc=(S.settings.payrollCc||"").trim();
+  var subj=(S.settings.employer||"Northern Tire")+" payroll — "+monthName();
+  var url="mailto:"+encodeURIComponent(to)+"?subject="+encodeURIComponent(subj)
+    +(cc?"&cc="+encodeURIComponent(cc):"")
+    +"&body="+encodeURIComponent(payrollEmailBody());
+  window.location.href=url;
+};
+window.emailReminder=function(){
+  var to=(S.settings.reminderTo||"vickisaul@me.com").trim();
+  if(!to){ alert("Add a reminder email under Setup → Payroll email first."); var b=document.querySelector('nav.tabs button[data-tab="setup"]'); if(b)b.click(); return; }
+  var pl=periodLabel(S.currentMonth);
+  var subj="Reminder: send "+monthName()+" payroll to Tandem Tax";
+  var body="Reminder to send the "+monthName()+" payroll hours to Tandem Tax (Avery)"
+    +(pl?(" \u2014 "+pl):"")+"."
+    +"\n\nOpen the Northern Tire payroll app and tap \u201cEmail payroll to Tandem Tax.\u201d";
+  var url="mailto:"+encodeURIComponent(to)+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
+  window.location.href=url;
+};
+
+var showSSN=false;
+window.toggleSSN=function(){showSSN=!showSSN;document.getElementById("ssnBtn").textContent=showSSN?"Hide SSNs":"Reveal SSNs";renderPrint();};
+function maskSSN(s){s=String(s||"").trim();if(!s)return "—";if(showSSN)return s;var d=s.replace(/\D/g,"");return d.length>=4?"•••-••-"+d.slice(-4):"•••";}
+function lastName(n){return n.indexOf(",")>=0?n.split(",")[0].trim():n.trim().split(/\s+/).slice(-1)[0];}
+function initials(n){
+  var first="";
+  if(n.indexOf(",")>=0)first=(n.split(",")[1]||"").trim();
+  else{var w=n.trim().split(/\s+/);first=w.slice(0,-1).join(" ");}
+  return first.split(/\s+/).filter(Boolean).map(function(x){return x[0].toUpperCase()+".";}).join("");
+}
+/* renderRemit/renderDetail replaced by packetHTML + renderPrint (split Shop / Salary) */
+
+function renderEmployees(){
+  var b=document.getElementById("empBody");
+  if(!S.employees.length){b.innerHTML='<tr><td colspan="7" class="empty">No employees.</td></tr>';return;}
+  b.innerHTML=S.employees.map(function(emp){
+    var cov=emp.coverage||"union";
+    return '<tr>'
+      +'<td><input type="text" value="'+escA(emp.name)+'" data-emp="'+emp.id+'" data-key="name" oninput="onEmp(this)" style="font-weight:600"></td>'
+      +'<td><input type="text" value="'+escA(emp.ssn||"")+'" data-emp="'+emp.id+'" data-key="ssn" oninput="onEmp(this)" placeholder="000-00-0000"></td>'
+      +'<td><select data-emp="'+emp.id+'" data-key="type" onchange="onEmp(this)"><option value="salaried"'+(emp.type==="salaried"?" selected":"")+'>Monthly</option><option value="hourly"'+(emp.type==="hourly"?" selected":"")+'>Hourly</option></select></td>'
+      +'<td><select data-emp="'+emp.id+'" data-key="coverage" onchange="onEmp(this)"><option value="union"'+(cov==="union"?" selected":"")+'>Union</option><option value="mgmt"'+(cov==="mgmt"?" selected":"")+'>Management</option></select></td>'
+      +'<td class="r"><input type="number" class="cellinput" value="'+(emp.hpd!=null&&emp.hpd!==""?emp.hpd:"")+'" data-emp="'+emp.id+'" data-key="hpd" oninput="onEmp(this)" placeholder="8"></td>'
+      +'<td class="r"><input type="number" class="cellinput" step="0.01" min="0" value="'+(Number(emp.clericalWeekly)>0?emp.clericalWeekly:"")+'" data-emp="'+emp.id+'" data-key="clericalWeekly" oninput="onEmp(this)" placeholder="0"></td>'
+      +'<td class="r"><button class="btn sm danger" onclick="rmEmp(\''+emp.id+'\')">Remove</button></td></tr>';
+  }).join("");
+}
+window.onEmp=function(inp){
+  var emp=S.employees.find(function(e){return e.id===inp.dataset.emp;});if(!emp)return;
+  var k=inp.dataset.key;
+  if(k==="hpd")emp.hpd=inp.value===""?null:Number(inp.value);
+  else if(k==="clericalWeekly")emp.clericalWeekly=inp.value===""?0:Number(inp.value);
+  else if(k==="type"){emp.type=inp.value;var e=entry(emp.id);if(emp.type==="salaried"&&(!e.salHours)&&S.settings.stdSalaried)e.salHours=Number(S.settings.stdSalaried);}
+  else emp[k]=inp.value;
+  persist();renderAll();
+};
+window.addEmployee=function(){
+  var name=document.getElementById("newName").value.trim();if(!name){document.getElementById("newName").focus();return;}
+  var type=document.getElementById("newType").value;
+  var coverage=document.getElementById("newCoverage").value;
+  var emp={id:id(),name:name,ssn:document.getElementById("newSSN").value.trim(),type:type,coverage:coverage,hpd:8};
+  S.employees.push(emp);
+  if(type==="salaried"&&S.settings.stdSalaried)entry(emp.id).salHours=Number(S.settings.stdSalaried);
+  document.getElementById("newName").value="";document.getElementById("newSSN").value="";
+  persist();renderAll();
+};
+window.rmEmp=function(eid){
+  if(!confirm("Remove this employee?"))return;
+  S.employees=S.employees.filter(function(e){return e.id!==eid;});
+  Object.keys(S.months).forEach(function(m){delete S.months[m][eid];});persist();renderAll();
+};
+
+function renderSetup(){
+  var s=S.settings;
+  set("setEmployer",s.employer);set("setCode",s.code);set("setEIN",s.ein);set("setPhone",s.phone);set("setAddr",s.addr);set("setCity",s.city);
+  set("setMin",s.minHours);set("setMax",(s.maxHours!=null&&s.maxHours!=="")?s.maxHours:"");set("setStd",s.stdSalaried);
+  set("setPrTo",s.payrollTo);set("setPrCc",s.payrollCc);set("setReminder",s.reminderTo||"vickisaul@me.com");
+  set("setFormNo",s.formNo||"");set("setFormRev",s.formRev||"");
+  var per=periodFor(S.currentMonth)||{};
+  set("setPerStart",per.start||"");set("setPerEnd",per.end||"");
+  var ph=document.getElementById("periodHint");
+  if(ph){ ph.innerHTML=periodHintHTML(); }
+  var ag=document.getElementById("setAgmt");
+  if(ag){ ag.innerHTML=AGREEMENTS.map(function(a){return '<option value="'+a.sub+'"'+(((s.agreement||"S")===a.sub)?" selected":"")+'>'+esc(a.sub+" — "+a.name)+'</option>';}).join(""); }
+  var b=document.getElementById("fundBody");
+  b.innerHTML=s.funds.map(function(f){
+    return '<tr>'
+      +'<td><input type="text" value="'+escA(f.name)+'" data-fid="'+f.id+'" data-k="name" oninput="onFund(this)"></td>'
+      +'<td class="r"><input type="number" class="cellinput" step="0.01" min="0" value="'+(f.rate||f.rate===0?f.rate:"")+'" data-fid="'+f.id+'" data-k="rate" oninput="onFund(this)"></td>'
+      +'<td><select data-fid="'+f.id+'" data-k="basis" onchange="onFund(this)">'
+        +'<option value="hr"'+(f.basis==="hr"?" selected":"")+'>Per hour</option>'
+        +'<option value="pct"'+(f.basis==="pct"?" selected":"")+'>% base wages</option>'
+        +'<option value="flat"'+(f.basis==="flat"?" selected":"")+'>Flat / employee</option></select></td>'
+      +'<td style="text-align:center"><input type="checkbox" '+(f.mgmt?"checked":"")+' data-fid="'+f.id+'" data-k="mgmt" onchange="onFund(this)" title="Applies to management / non-union employees"></td>'
+      +'<td class="r"><button class="btn sm danger" onclick="rmFund(\''+f.id+'\')">&times;</button></td></tr>';
+  }).join("");
+}
+function set(idv,val){var el=document.getElementById(idv);if(el)el.value=(val==null?"":val);}
+window.onFund=function(inp){
+  var f=S.settings.funds.find(function(x){return x.id===inp.dataset.fid;});if(!f)return;
+  var k=inp.dataset.k;
+  if(k==="rate")f.rate=inp.value===""?0:Number(inp.value);
+  else if(k==="mgmt")f.mgmt=inp.checked;
+  else f[k]=inp.value;
+  persist();renderHero();renderReport();renderPrint();
+};
+window.addFund=function(){S.settings.funds.push({id:id(),name:"New fund",rate:0,basis:"hr"});persist();renderSetup();};
+window.rmFund=function(fid){S.settings.funds=S.settings.funds.filter(function(f){return f.id!==fid;});persist();renderSetup();renderAll();};
+
+function bindSetup(){
+  function n(v){return v===""?null:Number(v);}
+  bind("setEmployer",function(v){S.settings.employer=v;document.getElementById("hdrEmployer").textContent=v||"Fringe Remittance";renderHero();renderPrint();});
+  bind("setCode",function(v){S.settings.code=v;renderPrint();});
+  bind("setEIN",function(v){S.settings.ein=v;renderPrint();});
+  bind("setPhone",function(v){S.settings.phone=v;});
+  bind("setAddr",function(v){S.settings.addr=v;});
+  bind("setCity",function(v){S.settings.city=v;});
+  bind("setMin",function(v){S.settings.minHours=n(v);renderHero();renderReport();renderPrint();});
+  bind("setMax",function(v){S.settings.maxHours=n(v);renderHero();renderReport();renderPrint();});
+  bind("setStd",function(v){S.settings.stdSalaried=n(v);});
+  bind("setPrTo",function(v){S.settings.payrollTo=v.trim();renderPrint();});
+  bind("setPrCc",function(v){S.settings.payrollCc=v.trim();});
+  bind("setReminder",function(v){S.settings.reminderTo=v.trim();renderPrint();});
+  bind("setPerStart",function(v){setPeriod("start",v);});
+  bind("setPerEnd",function(v){setPeriod("end",v);});
+  bind("setAgmt",function(v){S.settings.agreement=v;renderPrint();});
+  bind("setFormNo",function(v){S.settings.formNo=v;renderPrint();});
+  bind("setFormRev",function(v){S.settings.formRev=v;renderPrint();});
+}
+function bind(idv,fn){document.getElementById(idv).addEventListener("input",function(){fn(this.value);persist();});}
+
+/* month switch */
+document.getElementById("monthInput").addEventListener("change",function(){S.currentMonth=this.value||thisMonth;persist();renderAll();});
+
+/* ---------- summary ---------- */
+function sumRangeLabel(mks){ if(!mks.length)return ""; if(mks.length===1)return ymLabel(mks[0]); return ymLabel(mks[0])+" \u2013 "+ymLabel(mks[mks.length-1]); }
+function initSummaryDefaults(){
+  var now=new Date();
+  function setIf(idn,val){var el=document.getElementById(idn);if(el&&!el.value)el.value=val;}
+  setIf("sumMonth",S.currentMonth); setIf("sumYear",String(now.getFullYear()));
+  setIf("sumFrom",S.currentMonth); setIf("sumTo",S.currentMonth);
+}
+function renderSummary(){
+  var out=document.getElementById("summaryOut"); if(!out)return;
+  var type=(document.getElementById("sumRange")||{}).value||"month";
+  function show(idn,on){var el=document.getElementById(idn);if(el)el.style.display=on?"":"none";}
+  show("sumF_month",type==="month"); show("sumF_year",type==="year"||type==="quarter");
+  show("sumF_qtr",type==="quarter"); show("sumF_from",type==="custom"); show("sumF_to",type==="custom");
+  var cov=(document.getElementById("sumCov")||{}).value||"union";
+  var mks=monthsInRange();
+  if(!mks.length){ out.innerHTML='<p class="footnote">Pick a from and to month.</p>'; return; }
+  var r=rangeReport(mks,cov), funds=r.funds;
+  var covName=cov==="union"?"Shop (union)":cov==="mgmt"?"Salary (management)":"All employees";
+  var usedNote=r.monthsUsed.length+" of "+mks.length+" month"+(mks.length===1?"":"s")+" with data";
+  var emps=Object.keys(r.perEmp).map(function(k){return r.perEmp[k];}).filter(function(e){return e.hours>0||e.total>0;});
+  var html='<div class="prtsum" style="margin-bottom:8px"><b>'+esc(covName)+'</b> &middot; '+esc(sumRangeLabel(mks))+' &middot; '+esc(usedNote)+'</div>';
+  if(!emps.length){ out.innerHTML=html+'<p class="footnote">No hours recorded in this range yet.</p>'; return; }
+  html+='<div style="overflow-x:auto"><table class="sumtbl"><thead><tr><th>Employee</th><th class="num">Hours</th>';
+  funds.forEach(function(f){html+='<th class="num">'+esc(f.name)+'</th>';});
+  html+='<th class="num">Total</th></tr></thead><tbody>';
+  emps.forEach(function(e){
+    html+='<tr><td>'+esc(e.name)+'</td><td class="num">'+hrs(e.hours)+'</td>';
+    funds.forEach(function(f){var a=e.fundAmts[f.id]||0;html+='<td class="num">'+(a?("$"+money(a)):"\u2014")+'</td>';});
+    html+='<td class="num"><b>$'+money(e.total)+'</b></td></tr>';
+  });
+  html+='</tbody><tfoot><tr><td>Total</td><td class="num">'+hrs(r.totHours)+'</td>';
+  funds.forEach(function(f){html+='<td class="num">$'+money(r.fundTot[f.id]||0)+'</td>';});
+  html+='<td class="num">$'+money(r.grand)+'</td></tr></tfoot></table></div>';
+  html+='<div class="footnote" style="margin-top:8px">Fund hours: '+funds.map(function(f){return esc(f.name)+" "+hrs(r.fundHours[f.id]||0);}).join(" &middot; ")+'</div>';
+  out.innerHTML=html;
+}
+window.emailSummary=function(){
+  var cov=(document.getElementById("sumCov")||{}).value||"union";
+  var mks=monthsInRange(); if(!mks.length){alert("Pick a range first.");return;}
+  var r=rangeReport(mks,cov);
+  var covName=cov==="union"?"Shop (union)":cov==="mgmt"?"Salary (management)":"All employees";
+  var L=[(S.settings.employer||"Northern Tire")+" \u2014 fringe summary", covName+" \u00b7 "+sumRangeLabel(mks)];
+  L.push("Months with data: "+(r.monthsUsed.length?r.monthsUsed.map(ymLabel).join(", "):"none"),"");
+  r.funds.forEach(function(f){ L.push(f.name+": $"+money(r.fundTot[f.id]||0)+"  ("+hrs(r.fundHours[f.id]||0)+" hrs)"); });
+  L.push("","Total hours: "+hrs(r.totHours),"TOTAL: $"+money(r.grand));
+  var subj=(S.settings.employer||"Northern Tire")+" fringe summary \u2014 "+sumRangeLabel(mks);
+  window.location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(L.join("\n"));
+};
+
+/* ---------- filings history ---------- */
+window.recordFiling=function(kind){
+  kind=(kind==="mgmt")?"mgmt":"union";
+  var t=coverageTotals(kind);
+  if(t.count===0){ alert("Nothing to record for "+(kind==="mgmt"?"Salary":"Shop")+" in "+monthName()+" \u2014 no hours entered for that group."); return; }
+  var funds=activeFunds().filter(function(f){return (t.fund[f.id]||0)>0||(t.fundHours[f.id]||0)>0;});
+  if(!confirm("Record the "+(kind==="mgmt"?"Salary":"Shop")+" filing for "+monthName()+"?\n\nHours: "+hrs(t.hours)+"   Total: $"+money(t.total))) return;
+  var snap={ id:id(), ts:Date.now(), kind:kind, month:S.currentMonth, monthName:monthName(), period:periodLabel(S.currentMonth)||"",
+    hours:t.hours, total:t.total,
+    funds:funds.map(function(f){return {name:f.name,rate:Number(f.rate)||0,basis:f.basis||"hr",hours:t.fundHours[f.id]||0,amount:t.fund[f.id]||0};}),
+    employees:t.emps.map(function(e){return {name:e.name,hours:e.hours};}) };
+  if(!Array.isArray(S.filings))S.filings=[];
+  S.filings.push(snap); persist();
+  var b=document.querySelector('nav.tabs button[data-tab="filings"]'); if(b)b.click(); else renderFilings();
+};
+window.delFiling=function(fid){ if(!confirm("Delete this filing record? This can\u2019t be undone."))return; S.filings=(S.filings||[]).filter(function(x){return x.id!==fid;}); persist(); renderFilings(); };
+function renderFilings(){
+  var out=document.getElementById("filingsOut"); if(!out)return;
+  var list=(S.filings||[]).slice().sort(function(a,b){return b.ts-a.ts;});
+  if(!list.length){ out.innerHTML='<p class="footnote">No filings recorded yet. After you print and submit a remittance, tap <b>Record filing</b> on the Print / File tab to log it here.</p>'; return; }
+  out.innerHTML=list.map(function(s){
+    var dt=new Date(s.ts).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"});
+    var badge=s.kind==="mgmt"?"Salary":"Shop";
+    var funds=(s.funds||[]).map(function(f){return '<tr><td>'+esc(f.name)+'</td><td class="num">'+hrs(f.hours)+'</td><td class="num">'+(f.rate?("$"+money(f.rate)):"\u2014")+'</td><td class="num">$'+money(f.amount)+'</td></tr>';}).join("");
+    var emps=(s.employees||[]).map(function(e){return esc(e.name)+" "+hrs(e.hours);}).join(" \u00b7 ");
+    return '<div class="filerow"><div class="filehead"><div><span class="fbadge '+(s.kind==="mgmt"?"fb-m":"fb-u")+'">'+badge+'</span> <b>'+esc(s.monthName)+'</b>'
+      +'<div class="footnote" style="margin:2px 0 0">Filed '+dt+(s.period?(" &middot; "+esc(s.period)):"")+'</div></div>'
+      +'<div style="text-align:right"><div class="prtsum"><b>$'+money(s.total)+'</b></div><div class="footnote" style="margin:0">'+hrs(s.hours)+' hrs</div></div></div>'
+      +'<table class="sumtbl mini"><thead><tr><th>Fund</th><th class="num">Hours</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead><tbody>'+funds+'</tbody></table>'
+      +(emps?'<div class="footnote" style="margin-top:4px">'+emps+'</div>':'')
+      +'<div class="btnrow no-print" style="margin-top:8px"><button class="btn danger sm" onclick="delFiling(\''+s.id+'\')">Delete</button></div></div>';
+  }).join("");
+}
+window.exportFilings=function(){
+  var list=(S.filings||[]).slice().sort(function(a,b){return a.ts-b.ts;});
+  if(!list.length){alert("No filings to export.");return;}
+  var rows=[["Filed","Work Month","Coverage","Fund","Hours","Rate","Amount","Filing Total"]];
+  list.forEach(function(s){ var dt=new Date(s.ts).toISOString().slice(0,10);
+    (s.funds||[]).forEach(function(f){ rows.push([dt,s.month,(s.kind==="mgmt"?"Salary":"Shop"),f.name,hrs(f.hours),f.rate,money(f.amount),money(s.total)]); }); });
+  dl((S.settings.employer||"filings").replace(/[^a-z0-9]+/gi,"_")+"_filings.csv", rows.map(function(r){return r.map(cc).join(",");}).join("\n"));
+};
+
+/* ---------- form library ---------- */
+function tryPersist(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); mem=null; return true; }catch(e){ return false; } }
+window.handleFormFile=function(file){
+  if(!file)return;
+  var rd=new FileReader();
+  rd.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      var maxDim=1600, w=img.width, h=img.height, sc=Math.min(1,maxDim/Math.max(w,h));
+      var cw=Math.max(1,Math.round(w*sc)), ch=Math.max(1,Math.round(h*sc));
+      var cv=document.createElement("canvas"); cv.width=cw; cv.height=ch;
+      var ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cw,ch); ctx.drawImage(img,0,0,cw,ch);
+      var dataUrl=cv.toDataURL("image/jpeg",0.82);
+      var f={id:id(), name:(file.name||"Form").replace(/\.[a-z0-9]+$/i,""), rev:"", dataUrl:dataUrl, w:cw, h:ch, ts:Date.now()};
+      if(!Array.isArray(S.forms))S.forms=[];
+      if(S.forms.length===0)f.current=true;
+      S.forms.push(f);
+      if(!tryPersist()){ S.forms.pop(); persist(); alert("Couldn\u2019t save \u2014 device storage is full. Try a smaller or clearer photo, or delete an old form first."); return; }
+      renderForms();
+    };
+    img.onerror=function(){ alert("That file couldn\u2019t be read as an image. Use a PNG or JPG (a phone photo or screenshot works)."); };
+    img.src=rd.result;
+  };
+  rd.onerror=function(){ alert("Couldn\u2019t read that file."); };
+  rd.readAsDataURL(file);
+};
+window.setCurrentForm=function(fid){ (S.forms||[]).forEach(function(f){f.current=(f.id===fid);}); persist(); renderForms(); };
+window.delForm=function(fid){ if(!confirm("Delete this form from the library?"))return; var was=(S.forms||[]).filter(function(f){return f.id===fid;})[0]; S.forms=(S.forms||[]).filter(function(f){return f.id!==fid;}); if(was&&was.current&&S.forms.length)S.forms[0].current=true; persist(); renderForms(); };
+window.renameForm=function(fid,val){ var f=(S.forms||[]).filter(function(x){return x.id===fid;})[0]; if(f){f.name=val;persist();} };
+window.reviseForm=function(fid,val){ var f=(S.forms||[]).filter(function(x){return x.id===fid;})[0]; if(f){f.rev=val;persist();renderFormsRev();} };
+window.downloadForm=function(fid){ var f=(S.forms||[]).filter(function(x){return x.id===fid;})[0]; if(!f)return; var a=document.createElement("a"); a.href=f.dataUrl; a.download=(f.name||"form").replace(/[^a-z0-9]+/gi,"_")+".jpg"; document.body.appendChild(a); a.click(); setTimeout(function(){a.remove();},300); };
+window.printForm=function(fid){ var f=(S.forms||[]).filter(function(x){return x.id===fid;})[0]; if(!f)return; var box=document.getElementById("formPrint"); if(!box)return; box.innerHTML='<img src="'+f.dataUrl+'" alt="">'; document.body.classList.add("print-form"); setTimeout(function(){window.print();},60); setTimeout(function(){document.body.classList.remove("print-form");box.innerHTML="";},2000); };
+function renderFormsRev(){
+  var el=document.getElementById("formsRev"); if(!el)return;
+  var cur=(S.forms||[]).filter(function(f){return f.current;})[0];
+  el.innerHTML = cur
+    ? ("Current blank on file: <b>"+esc(cur.name)+(cur.rev?(" \u00b7 "+esc(cur.rev)):"")+"</b>. The generated facsimile header reads <b>"+esc(S.settings.formRev||"")+"</b> \u2014 change that under <b>Setup</b> if the revision moved.")
+    : ("No form uploaded yet. The generated facsimile uses the revision set under <b>Setup</b> ("+esc(S.settings.formRev||"")+").");
+}
+function renderForms(){
+  renderFormsRev();
+  var out=document.getElementById("formsOut"); if(!out)return;
+  var list=(S.forms||[]).slice().sort(function(a,b){return ((b.current?1:0)-(a.current?1:0))||(b.ts-a.ts);});
+  if(!list.length){ out.innerHTML='<p class="footnote">No forms in the library yet. Tap <b>Upload form image</b> to add the union\u2019s current blank.</p>'; return; }
+  out.innerHTML=list.map(function(f){
+    var dt=new Date(f.ts).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"});
+    return '<div class="formcard'+(f.current?" cur":"")+'">'
+      +'<div class="formthumb"><img src="'+f.dataUrl+'" alt=""></div>'
+      +'<div class="forminfo">'
+        +(f.current?'<div style="margin-bottom:6px"><span class="curbadge">Current</span></div>':'')
+        +'<div class="field" style="margin-bottom:6px"><label>Name</label><input type="text" value="'+esc(f.name)+'" oninput="renameForm(\''+f.id+'\',this.value)"></div>'
+        +'<div class="field" style="margin-bottom:6px"><label>Revision</label><input type="text" placeholder="e.g. REV. 6/26" value="'+esc(f.rev||"")+'" oninput="reviseForm(\''+f.id+'\',this.value)"></div>'
+        +'<div class="footnote" style="margin:0 0 8px">Added '+dt+'</div>'
+        +'<div class="btnrow" style="margin:0">'
+          +(f.current?'':'<button class="btn ghost sm" onclick="setCurrentForm(\''+f.id+'\')">Set current</button>')
+          +'<button class="btn ghost sm" onclick="printForm(\''+f.id+'\')">Print</button>'
+          +'<button class="btn ghost sm" onclick="downloadForm(\''+f.id+'\')">Download</button>'
+          +'<button class="btn danger sm" onclick="delForm(\''+f.id+'\')">Delete</button>'
+        +'</div></div></div>';
+  }).join("");
+}
+
+/* ---------- contract update ---------- */
+function fundUnit(f){return f.basis==="pct"?"% of gross":f.basis==="flat"?"flat/mo":"/hr";}
+function curMin(){return (S.settings.minHours!=null&&S.settings.minHours!=="")?Number(S.settings.minHours):0;}
+function curMax(){return (S.settings.maxHours!=null&&S.settings.maxHours!=="")?Number(S.settings.maxHours):0;}
+function renderContract(){
+  var rev=document.getElementById("contractReview");
+  if(rev){
+    var cur=(S.forms||[]).filter(function(f){return f.current;})[0];
+    var meta=(S.settings.contractLabel||S.settings.contractEff)
+      ? ('<div class="prtsum" style="margin-bottom:8px">In effect: <b>'+esc(S.settings.contractLabel||"current contract")+'</b>'+(S.settings.contractEff?(" \u00b7 since "+esc(fmtFull(S.settings.contractEff))):"")+'</div>') : '';
+    rev.innerHTML = meta + (cur
+      ? '<div class="formcard cur"><div class="formthumb"><img src="'+cur.dataUrl+'" alt=""></div><div class="forminfo"><div style="margin-bottom:6px"><span class="curbadge">On file</span></div><div class="prtsum"><b>'+esc(cur.name)+(cur.rev?(" \u00b7 "+esc(cur.rev)):"")+'</b></div><div class="footnote">Review the agreement, then enter what changed below.</div><div class="btnrow" style="margin-top:8px"><button class="btn ghost sm" onclick="printForm(\''+cur.id+'\')">View / print</button><button class="btn ghost sm" onclick="gotoTab(\'forms\')">Open Forms</button></div></div></div>'
+      : '<div class="holiday" style="display:block">No agreement on file to review. Upload the contract image in the <b>Forms</b> tab so it stays with the app. <span class="btnrow" style="margin-top:8px;display:flex"><button class="btn ghost sm" onclick="gotoTab(\'forms\')">Open Forms</button></span></div>');
+  }
+  var prem=document.getElementById("ctPremiums");
+  if(prem){
+    prem.innerHTML='<div style="overflow-x:auto"><table class="sumtbl"><thead><tr><th>Fund</th><th>Basis</th><th class="num">Current</th><th class="num">New</th></tr></thead><tbody>'+
+      S.settings.funds.map(function(f){
+        var r=Number(f.rate)||0;
+        return '<tr><td>'+esc(f.name)+'</td><td>'+fundUnit(f)+'</td><td class="num">'+(f.basis==="pct"?(r+"%"):("$"+money(r)))+'</td>'
+          +'<td class="num"><input type="number" step="0.01" min="0" id="ctrate_'+f.id+'" value="'+r+'" oninput="renderContractDiff()" style="width:96px;text-align:right"></td></tr>';
+      }).join("")+'</tbody></table></div>';
+  }
+  setVal("ctMin",curMin()); setVal("ctMax",curMax()===0?"":curMax());
+  setVal("ctEff",""); setVal("ctLabel","");
+  renderContractDiff(); renderContractHist();
+}
+function setVal(idn,v){var el=document.getElementById(idn);if(el)el.value=(v==null?"":v);}
+function readContractInputs(){
+  var prem=S.settings.funds.map(function(f){var el=document.getElementById("ctrate_"+f.id);var v=el&&el.value!==""?Number(el.value):Number(f.rate)||0;return {id:f.id,name:f.name,basis:f.basis,rate:isFinite(v)?v:(Number(f.rate)||0)};});
+  var minEl=document.getElementById("ctMin"), maxEl=document.getElementById("ctMax");
+  var min=minEl&&minEl.value!==""?Number(minEl.value):0;
+  var max=maxEl&&maxEl.value!==""?Number(maxEl.value):0;
+  return {prem:prem,min:isFinite(min)?min:0,max:isFinite(max)?max:0,
+    eff:(document.getElementById("ctEff")||{}).value||"", label:((document.getElementById("ctLabel")||{}).value||"").trim()};
+}
+function contractChanges(inp){
+  var ch=[];
+  inp.prem.forEach(function(p){var old=Number((S.settings.funds.filter(function(f){return f.id===p.id;})[0]||{}).rate)||0;
+    if(Math.abs(old-p.rate)>1e-9) ch.push({k:p.name, from:(p.basis==="pct"?old+"%":"$"+money(old)), to:(p.basis==="pct"?p.rate+"%":"$"+money(p.rate))});});
+  if(Math.abs(curMin()-inp.min)>1e-9) ch.push({k:"Minimum hours", from:curMin()||"none", to:inp.min||"none"});
+  if(Math.abs(curMax()-inp.max)>1e-9) ch.push({k:"Max hours (cap)", from:curMax()||"none", to:inp.max||"none"});
+  return ch;
+}
+function renderContractDiff(){
+  var el=document.getElementById("ctDiff"); if(!el)return;
+  var ch=contractChanges(readContractInputs());
+  el.innerHTML = ch.length
+    ? '<div class="holiday" style="display:block;background:#eef5ef;border-color:#9cc3a6;border-left-color:#3f8a52;color:#234a2e"><b>'+ch.length+' change'+(ch.length===1?"":"s")+' to apply:</b><br>'+ch.map(function(c){return esc(c.k)+": "+esc(String(c.from))+" \u2192 <b>"+esc(String(c.to))+"</b>";}).join("<br>")+'</div>'
+    : '<div class="footnote">No changes from current values yet.</div>';
+}
+window.renderContractDiff=renderContractDiff;
+window.contractResetFields=function(){ renderContract(); };
+window.gotoTab=function(t){ var b=document.querySelector('nav.tabs button[data-tab="'+t+'"]'); if(b)b.click(); };
+window.applyContractUpdate=function(){
+  var inp=readContractInputs(), ch=contractChanges(inp);
+  if(!ch.length){ alert("No changes to apply \u2014 the new values match the current ones."); return; }
+  if(!confirm("Apply "+ch.length+" change"+(ch.length===1?"":"s")+"?\n\n"+ch.map(function(c){return c.k+": "+c.from+" \u2192 "+c.to;}).join("\n")+"\n\nThis updates every report and the printed form.")) return;
+  inp.prem.forEach(function(p){var f=S.settings.funds.filter(function(x){return x.id===p.id;})[0]; if(f)f.rate=p.rate;});
+  S.settings.minHours=inp.min; S.settings.maxHours=inp.max;
+  if(inp.label) S.settings.contractLabel=inp.label;
+  if(inp.eff) S.settings.contractEff=inp.eff;
+  if(!Array.isArray(S.contractHistory))S.contractHistory=[];
+  S.contractHistory.push({ id:id(), ts:Date.now(), eff:inp.eff, label:inp.label,
+    premiums:inp.prem.map(function(p){return {id:p.id,name:p.name,basis:p.basis,rate:p.rate};}),
+    min:inp.min, cap:inp.max,
+    changes:ch.map(function(c){return c.k+": "+c.from+" \u2192 "+c.to;}) });
+  persist(); renderAll(); renderContract();
+  alert("Contract updated. "+ch.length+" change"+(ch.length===1?"":"s")+" applied across the app.");
+};
+window.delContractRev=function(hid){ if(!confirm("Delete this history entry? (It won\u2019t change current values.)"))return; S.contractHistory=(S.contractHistory||[]).filter(function(x){return x.id!==hid;}); persist(); renderContractHist(); };
+window.revertContract=function(hid){
+  var snap=(S.contractHistory||[]).filter(function(x){return x.id===hid;})[0]; if(!snap)return;
+  if(!confirm("Revert current values to this entry?\n\n"+(snap.label||"(no label)")+(snap.eff?(" \u00b7 "+fmtFull(snap.eff)):"")))return;
+  (snap.premiums||[]).forEach(function(p){var f=S.settings.funds.filter(function(x){return x.id===p.id;})[0]; if(f)f.rate=p.rate;});
+  if(snap.min!=null)S.settings.minHours=snap.min;
+  if(snap.cap!=null)S.settings.maxHours=snap.cap;
+  if(snap.label)S.settings.contractLabel=snap.label; if(snap.eff)S.settings.contractEff=snap.eff;
+  persist(); renderAll(); renderContract();
+};
+function renderContractHist(){
+  var out=document.getElementById("contractHist"); if(!out)return;
+  var list=(S.contractHistory||[]).slice().sort(function(a,b){return b.ts-a.ts;});
+  if(!list.length){ out.innerHTML='<p class="footnote">No updates logged yet. Your first applied change will appear here with its effective date.</p>'; return; }
+  out.innerHTML=list.map(function(s){
+    var dt=new Date(s.ts).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"});
+    return '<div class="filerow"><div class="filehead"><div><b>'+esc(s.label||"Contract update")+'</b>'
+      +'<div class="footnote" style="margin:2px 0 0">'+(s.eff?("Effective "+esc(fmtFull(s.eff))+" \u00b7 "):"")+"applied "+dt+'</div></div></div>'
+      +'<div class="footnote" style="margin-top:6px">'+(s.changes&&s.changes.length?s.changes.map(esc).join("<br>"):"(no field changes recorded)")+'</div>'
+      +'<div class="btnrow no-print" style="margin-top:8px"><button class="btn ghost sm" onclick="revertContract(\''+s.id+'\')">Revert to this</button><button class="btn danger sm" onclick="delContractRev(\''+s.id+'\')">Delete</button></div></div>';
+  }).join("");
+}
+function fmtFull(iso){var d=parseD(iso);return d?d.toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}):iso;}
+
+/* tabs */
+var tb=document.querySelectorAll("nav.tabs button");
+tb.forEach(function(b){b.addEventListener("click",function(){
+  tb.forEach(function(x){x.classList.remove("active");});b.classList.add("active");
+  ["report","print","summary","filings","forms","contract","employees","setup"].forEach(function(t){document.getElementById("tab-"+t).style.display=(t===b.dataset.tab)?"":"none";});
+  if(b.dataset.tab==="print")renderPrint();if(b.dataset.tab==="report")renderReport();
+  if(b.dataset.tab==="summary"){initSummaryDefaults();renderSummary();}
+  if(b.dataset.tab==="filings")renderFilings();
+  if(b.dataset.tab==="forms")renderForms();
+  if(b.dataset.tab==="contract")renderContract();
+});});
+var ffInput=document.getElementById("formFile");
+if(ffInput)ffInput.addEventListener("change",function(ev){var file=ev.target.files[0];if(file)handleFormFile(file);ev.target.value="";});
+["sumRange","sumCov","sumMonth","sumYear","sumQtr","sumFrom","sumTo"].forEach(function(idn){
+  var el=document.getElementById(idn); if(el)el.addEventListener("change",renderSummary);
+});
+
+/* CSV import for hourly */
+var parsedCSV=null;
+document.getElementById("csvFile").addEventListener("change",function(ev){
+  var f=ev.target.files[0];if(!f)return;var r=new FileReader();
+  r.onload=function(){parsedCSV=parseCSV(r.result);showMap();};r.readAsText(f);
+});
+function parseCSV(text){
+  text=text.replace(/^\uFEFF/,"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+  var rows=[],row=[],cur="",q=false;
+  for(var i=0;i<text.length;i++){var ch=text[i];
+    if(q){if(ch=='"'){if(text[i+1]=='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+    else{if(ch=='"')q=true;else if(ch==","){row.push(cur);cur="";}else if(ch=="\n"){row.push(cur);rows.push(row);row=[];cur="";}else cur+=ch;}
+  }
+  if(cur!==""||row.length){row.push(cur);rows.push(row);}
+  return rows.filter(function(r){return r.some(function(c){return String(c).trim()!=="";});});
+}
+function showMap(){
+  var a=document.getElementById("mapArea");
+  if(!parsedCSV||!parsedCSV.length){a.innerHTML='<div class="note">Could not read that file.</div>';return;}
+  var h=parsedCSV[0];
+  function guess(w){for(var i=0;i<h.length;i++){var s=String(h[i]).toLowerCase();if(w.some(function(x){return s.indexOf(x)>=0;}))return i;}return -1;}
+  var gN=guess(["employee","name","last"]);if(gN<0)gN=0;var gH=guess(["worked","total hour","hours","total"]);if(gH<0)gH=h.length-1;
+  var opts=h.map(function(x,i){return '<option value="'+i+'">'+esc(x||("Column "+(i+1)))+'</option>';}).join("");
+  a.innerHTML='<div class="note"><b>Map the CSV columns,</b> then import worked hours into hourly employees.'
+    +'<div class="grid two" style="margin-top:10px"><div class="field"><label>Name column</label><select id="mN">'+opts+'</select></div>'
+    +'<div class="field"><label>Worked hours column</label><select id="mH">'+opts+'</select></div></div>'
+    +'<div class="btnrow"><button class="btn brass sm" onclick="doImport()">Import</button><button class="btn ghost sm" onclick="cancelImport()">Cancel</button></div>'
+    +'<div id="impRes"></div></div>';
+  document.getElementById("mN").value=gN;document.getElementById("mH").value=gH;
+}
+window.cancelImport=function(){parsedCSV=null;document.getElementById("mapArea").innerHTML="";document.getElementById("csvFile").value="";};
+window.doImport=function(){
+  if(!parsedCSV)return;var ni=+document.getElementById("mN").value,hi=+document.getElementById("mH").value;
+  var start=isNaN(parseFloat(parsedCSV[0][hi]))?1:0,agg={};
+  for(var i=start;i<parsedCSV.length;i++){var r=parsedCSV[i];var nm=String(r[ni]||"").trim();
+    var hv=parseFloat(String(r[hi]||"").replace(/[^0-9.\-]/g,""));if(!nm||!isFinite(hv))continue;agg[norm(nm)]=(agg[norm(nm)]||0)+hv;}
+  var matched=0,un=[];
+  Object.keys(agg).forEach(function(k){
+    var emp=S.employees.find(function(e){return e.type==="hourly"&&(norm(e.name)===k||norm(flip(e.name))===k);});
+    if(emp){entry(emp.id).worked=Math.round(agg[k]*100)/100;matched++;}else un.push(k);
+  });
+  persist();renderAll();
+  document.getElementById("impRes").innerHTML='<div style="margin-top:10px">Imported into <b>'+matched+'</b> hourly employee(s).'
+    +(un.length?' <span style="color:var(--flag)">No hourly match: '+un.map(esc).join(", ")+'.</span>':'')+'</div>';
+};
+function norm(s){return String(s).toLowerCase().replace(/[.,]/g,"").replace(/\s+/g," ").trim();}
+function flip(n){if(n.indexOf(",")>=0){var p=n.split(",");return (p[1]||"").trim()+" "+(p[0]||"").trim();}var w=n.trim().split(/\s+/);return w.length>=2?w[w.length-1]+", "+w.slice(0,-1).join(" "):n;}
+
+/* exports */
+function dl(name,text){var b=new Blob([text],{type:"text/csv;charset=utf-8"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(u);},300);}
+function cc(v){v=String(v==null?"":v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+window.exportRemit=function(){
+  var t=totals(),s=S.settings,L=[];
+  L.push([s.employer,"Local 324 Fringe Remittance",monthName()]);
+  L.push(["Contractor",s.code,"EIN",s.ein]);L.push([]);
+  L.push(["Fund","Rate","Basis","Hours/Wages","Amount"]);
+  activeFunds().forEach(function(f){
+    var mult=f.basis==="pct"?t.fundBase[f.id]:(f.basis==="flat"?t.fundCount[f.id]:t.fundHours[f.id]);
+    L.push([f.name,f.rate,f.basis,mult,round2(t.fund[f.id])]);
+  });
+  L.push(["TOTAL","","","",round2(t.total)]);
+  dl((s.employer||"remit").replace(/[^a-z0-9]+/gi,"_")+"_3023_"+S.currentMonth+".csv",L.map(function(r){return r.map(cc).join(",");}).join("\n"));
+};
+window.exportDetail=function(){
+  var s=S.settings,L=[];L.push([s.employer,"Employee Detail (Form 326)",monthName()]);L.push([]);
+  L.push(["Last Name","Initials","SSN","Hours Paid","Base Wages"]);
+  var th=0,tb=0;
+  S.employees.forEach(function(emp){var c=calcEmp(emp);if(c.hours<=0&&c.base<=0)return;th+=c.hours;tb+=c.base;
+    L.push([lastName(emp.name),initials(emp.name),emp.ssn||"",round2(c.hours),round2(c.base)]);});
+  L.push(["TOTALS","","",round2(th),round2(tb)]);
+  dl((s.employer||"detail").replace(/[^a-z0-9]+/gi,"_")+"_326_"+S.currentMonth+".csv",L.map(function(r){return r.map(cc).join(",");}).join("\n"));
+};
+function round2(n){return Math.round((Number(n)||0)*100)/100;}
+
+window.resetMonth=function(){if(!confirm("Clear all entries for "+S.currentMonth+"?"))return;S.months[S.currentMonth]={};persist();renderAll();};
+window.resetAll=function(){if(!confirm("Erase ALL data and start over?"))return;S=fresh();persist();renderAll();};
+
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+function escA(s){return String(s==null?"":s).replace(/"/g,"&quot;").replace(/</g,"&lt;");}
+
+bindSetup();renderAll();
+</script>
+</body>
+</html>
