@@ -121,7 +121,8 @@
   .packet{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
   /* ===== Local 324 form facsimile ===== */
-  .gform{background:#fff;color:#000;border:2px solid #000;width:860px;max-width:100%;margin:0 auto 16px;font-family:"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-size:10px;line-height:1.12}
+  .gform{background:#fff;color:#000;border:2px solid #000;width:860px;max-width:100%;margin:0 auto 16px;font-family:"Arial Narrow","Helvetica Neue",Arial,sans-serif;font-size:10px;line-height:1.12;display:flex;flex-direction:column;min-height:1131px}
+  .gfill{flex:1 1 auto}
   .gform .ghdr{display:flex;border-bottom:2px solid #000}
   .gform .hbox{padding:5px 7px;border-right:1px solid #000}
   .gform .hbox:last-child{border-right:none}
@@ -165,19 +166,19 @@
   .gform .packetnote{font-size:8px;font-weight:800;text-align:right;align-self:flex-end;text-transform:uppercase}
   .gform.p2 .p2title{font-size:11px;font-weight:800;text-transform:uppercase;text-align:center;padding:4px;border-bottom:2px solid #000;letter-spacing:.02em}
   .gform.p2 .p2meta{display:flex;border-bottom:2px solid #000}
-  .gform.p2 .p2body{display:flex}
+  .gform.p2 .p2body{display:flex;flex:1 1 auto}
   .gform.p2 table.dett{border-collapse:collapse;width:72%;table-layout:fixed}
   .gform.p2 table.dett th,.gform.p2 table.dett td{border:1px solid #000;padding:3px 5px;font-size:9px;height:19px}
   .gform.p2 table.dett th{font-size:7px;font-weight:700;text-transform:uppercase;text-align:left;line-height:1.05;vertical-align:bottom}
   .gform.p2 .ln{width:34%}.gform.p2 .ini{width:13%;text-align:center}.gform.p2 .ssn{width:25%}
   .gform.p2 .hp,.gform.p2 .bw{text-align:right;font-variant-numeric:tabular-nums}
   .gform.p2 .totlbl{text-align:right;font-weight:800;text-transform:uppercase;font-size:8px}
-  .gform.p2 .p2side{width:28%;border-left:2px solid #000;padding:7px;font-size:7px;line-height:1.28}
+  .gform.p2 .p2side{width:28%;border-left:2px solid #000;padding:7px;font-size:7px;line-height:1.28;display:flex;flex-direction:column}
   .gform.p2 .sidettl{font-weight:800;text-transform:uppercase;font-size:8px;margin-bottom:3px}
   .gform.p2 .sidep{margin-bottom:5px}
   .gform.p2 .sidenotice{border:1px solid #000;padding:4px;margin:6px 0;font-weight:700}
   .gform.p2 .sideimp{margin:6px 0}
-  .gform.p2 .sig{margin-top:16px}
+  .gform.p2 .sig{margin-top:auto;padding-top:16px}
   .gform.p2 .sigline{border-bottom:1px solid #000;padding-bottom:2px;font-size:15px;font-family:"Segoe Script","Snell Roundhand","Brush Script MT",cursive}
   .gform.p2 .siglab{font-size:6.5px;text-transform:uppercase;margin-top:2px}
   .gform.p2 .sigtitle{font-size:8px;font-weight:700;margin-top:4px}
@@ -187,8 +188,9 @@
     .money.total,.amt .cur{color:#000}
     body.print-union .packet.mgmt{display:none!important}
     body.print-mgmt .packet.union{display:none!important}
-    .gform{border:2px solid #000;width:auto;max-width:none;margin:.3in;box-sizing:border-box;page-break-after:always}
-    .gform:last-child{page-break-after:auto}
+    .packet .sheet{width:8.5in;height:11in;overflow:hidden;display:flex;align-items:center;justify-content:center;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;margin:0 auto}
+    .packet .sheet:last-child{page-break-after:auto;break-after:auto}
+    .gform{border:2px solid #000;width:860px;max-width:none;min-height:0;margin:0;box-sizing:border-box;transform:scale(var(--k,.87));transform-origin:center center;zoom:normal}
     @page{size:letter portrait;margin:0}
   }
   .sumtbl{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
@@ -217,6 +219,12 @@
     body.print-form main>.panel{display:none!important}
     body.print-form #formPrint{display:block!important;padding:.3in;box-sizing:border-box}
   }
+  .synccard{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:18px;background:#fbfaf6}
+  .syncchip{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;vertical-align:middle}
+  .syncchip.off{background:#e7e4db;color:#6b6457}
+  .syncchip.on{background:#1f3a2e;color:#dff0e6}
+  .syncchip.err{background:#7a2230;color:#f5d8dd}
+  .syncchip.busy{background:#3a2f1f;color:#f0e6d0}
 </style>
 <body>
 
@@ -254,8 +262,9 @@
     <h2>Shop Agreement report</h2>
     <p class="hint">Section S, Operating Engineers Local 324. Worked hours come from the time clock — import the CSV or enter them — plus sick and vacation days for any zero days. Fringes are figured on actual hours (no hours minimum). (Switch an employee to Monthly only if you report a fixed figure instead.)</p>
     <div class="btnrow no-print" id="importRow">
+      <button class="btn brass sm" onclick="tsPull()">Pull hours from TimeStation</button>
       <label class="btn ghost sm" style="cursor:pointer">Import worked hours (CSV)<input type="file" id="csvFile" accept=".csv" style="display:none"></label>
-      <span class="footnote" style="margin:0;align-self:center">From the Time Clock export — fills hourly employees' worked hours.</span>
+      <span class="footnote" style="margin:0;align-self:center">Pull from TimeStation (after setup) or import the Time Clock CSV &mdash; both fill hourly employees' worked hours.</span>
     </div>
     <div id="mapArea"></div>
     <div class="section-div"></div>
@@ -423,6 +432,25 @@
     <h2>Company setup &amp; fund rates</h2>
     <p class="hint">Header info prints on both forms. Rates come from your CBA / Form 3023 rate table. Pre-filled with Northern Tire&rsquo;s Shop Agreement (Section S).</p>
 
+    <div class="synccard">
+      <div class="eyebrow" style="margin-bottom:6px">Cloud sync <span id="syncChip" class="syncchip off">off</span></div>
+      <p class="footnote" style="margin:0 0 10px">Sync this app between your phone and laptop through your NTI Supabase project. Everything syncs <b>except SSNs</b> — those stay on each device (enter once per device). Sign in once per device with an emailed code.</p>
+      <div class="grid two" style="max-width:620px">
+        <div class="field"><label>Supabase URL <span class="sub">https://xxxx.supabase.co</span></label><input type="text" id="syncUrl" placeholder="https://xxxx.supabase.co" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+        <div class="field"><label>Anon / publishable key <span class="sub">safe to store — public</span></label><input type="text" id="syncKey" placeholder="eyJ..." autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      </div>
+      <div id="syncAuth" style="margin-top:10px"></div>
+      <div class="footnote" id="syncStatus" style="margin-top:8px"></div>
+    </div>
+
+    <div class="synccard">
+      <div class="eyebrow" style="margin-bottom:6px">TimeStation time clock <span id="tsChip" class="syncchip off">off</span></div>
+      <p class="footnote" style="margin:0 0 10px">Pull worked hours straight from TimeStation into the Shop Report &mdash; no more CSV. The pull runs through your NTI Supabase, which holds the TimeStation key, so the key never lives in this app. Requires <b>Cloud sync above to be signed in</b>, and the <code>timestation-pull</code> function deployed once in your NTI project (see the steps I gave you). Then match each TimeStation person to your employees.</p>
+      <div class="btnrow" style="margin:0"><button class="btn ghost sm" onclick="tsLoadEmployees()">Load &amp; map employees</button></div>
+      <div id="tsMapBox" style="margin-top:10px"></div>
+      <div class="footnote" id="tsMsg" style="margin-top:8px"></div>
+    </div>
+
     <div class="eyebrow" style="margin-bottom:10px">Employer / contractor</div>
     <div class="grid two">
       <div class="field"><label>Company name</label><input type="text" id="setEmployer"></div>
@@ -440,8 +468,8 @@
       <div class="field"><label>Monthly maximum hours <span class="sub">cap — blank = none. Set via Contract tab</span></label><input type="number" id="setMax" step="0.01" min="0" placeholder="none"></div>
       <div class="field"><label>Standard monthly hours <span class="sub">default for new monthly employees</span></label><input type="number" id="setStd" step="0.01" min="0" placeholder="optional"></div>
       <div class="field"><label>Agreement marked &ldquo;X&rdquo; <span class="sub">row checked on the 3022 form</span></label><select id="setAgmt"></select></div>
-      <div class="field"><label>Form number <span class="sub">printed on the facsimile header</span></label><input type="text" id="setFormNo" placeholder="Form 3022 · Remittance Report"></div>
-      <div class="field"><label>Form revision <span class="sub">update when the union revises it</span></label><input type="text" id="setFormRev" placeholder="REV. 6/22"></div>
+      <div class="field"><label>Form number <span class="sub">printed on the facsimile header</span></label><input type="text" id="setFormNo" placeholder="FORM 3029 · Remittance Report"></div>
+      <div class="field"><label>Form revision <span class="sub">update when the union revises it</span></label><input type="text" id="setFormRev" placeholder="REV. 5/26"></div>
     </div>
 
     <div class="section-div"></div>
@@ -490,31 +518,37 @@ function id(){return "e"+Math.random().toString(36).slice(2,9);}
 /* Local 324 agreement rate schedule (Form 3022 REV 6/22 reference grid) — transcribed from the printed form.
    Reference-only: the marked row carries an X; the money actually owed is computed in the Remittance section
    from the live rates in Setup, not from this grid. */
+/* Form 3029 REV. 5/26 fringe benefit fund rate schedule (transcribed from the union form).
+   Columns: Health Care, Pension, Retiree Benefit, Vacation & Holiday, Supplemental Vacation,
+   Apprentice & Training, IUOE NTF, Industry Advancement & Promotion/DLMC/UPLMC,
+   324 Lbr Mgmt Education Committee, Industry Labor Mgmt Fund, Defined Contribution Plan.
+   Section S (Shop Agreement) prints BLANK on this form — NTI's actual shop rates live in
+   settings.funds and drive the remittance math, not this reference schedule. */
 var AGREEMENTS=[
- {sec:"A",sub:"A",  name:"AGC - Detroit Metro CBA",        eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","$0.18","\u2014","$1.10"]},
- {sec:"", sub:"AX", name:"Small equipment addendum",       eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.15","$0.14","\u2014","$1.00"]},
- {sec:"B",sub:"B",  name:"MUCG Underground Agreement",      eff:"9-1-21", r:["$8.40","$13.95","$0.45","15%","$0.05","$1.00","$0.05","$0.03","$0.18","$0.08","$1.00"]},
- {sec:"", sub:"BX", name:"Class V Operator",               eff:"9-1-21", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.03","\u2014","$0.08","$1.00"]},
- {sec:"C",sub:"C",  name:"AGC - Outstate Addendum",         eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.03","$0.18","\u2014","$1.00"]},
- {sec:"", sub:"CX", name:"Small equipment addendum",        eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.03","\u2014","$0.08","$1.00"]},
- {sec:"D",sub:"D",  name:"Distribution and Communications", eff:"5-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","$0.14","\u2014","$1.00"]},
- {sec:"", sub:"DX", name:"Cable-Com-Utility Engineer",      eff:"5-1-22", r:["$6.50","$3.00","\u2014","15%","\u2014","$0.50","$0.05","$0.05","$0.14","\u2014","$1.00"]},
- {sec:"E",sub:"E",  name:"AGC - Upper Peninsula",           eff:"5-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","\u2014","\u2014","$1.00"]},
- {sec:"", sub:"EX", name:"Class E Operator",               eff:"5-1-22", r:["$6.50","$4.00","$0.10","15%","\u2014","$0.70","$0.05","$0.15","\u2014","\u2014","$0.75"]},
- {sec:"G",sub:"G",  name:"National Pipeline Agreement",     eff:"6-1-22", r:["$8.45","$13.95","$0.45","15%","$0.02","$1.00","\u2014","\u2014","$0.15","\u2014","$0.75"]},
- {sec:"H",sub:"H",  name:"Highway, Bridge & Airport Agmt.", eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","$0.05","$1.00","$0.05","$0.03","$0.16","$0.10","$1.00"]},
- {sec:"", sub:"HX", name:"Class V Operator",               eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.03","$0.16","$0.10","$1.00"]},
- {sec:"H",sub:"HU", name:"Highway, Bridge & Airport (U.P.)",eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","$0.05","$1.00","$0.05","$0.03","\u2014","$0.10","$1.00"]},
- {sec:"", sub:"HUX",name:"Class V Operator",               eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.06","$0.16","$0.06","$1.00"]},
- {sec:"J",sub:"J",  name:"Great Lakes Fab & Erector Assn",  eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.36","\u2014","$0.05","$1.00"]},
- {sec:"", sub:"JX", name:"Oiler - Ground Man, etc.",        eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","$0.05","$1.00","$0.05","$0.36","$0.19","\u2014","$1.00"]},
- {sec:"K",sub:"K",  name:"Floating - Grt. Lakes & Marine",  eff:"1-1-21", r:["$8.40","$13.95","$0.45","15%","$0.05","$0.45","$0.05","$0.33","$0.14","\u2014","$1.00"]},
- {sec:"O",sub:"O",  name:"Owner - Operator",                eff:"6-1-22", r:["$8.40","$13.95","$0.45","\u2014","\u2014","$1.00","$0.05","\u2014","$0.25","\u2014","$1.00"]},
- {sec:"S",sub:"S",  name:"Shop Agreement",                  eff:"",       r:["\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","$0.19","\u2014","$1.10"]},
- {sec:"U",sub:"U",  name:"CAM - S E Michigan",              eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","$0.19","\u2014","$1.10"]},
- {sec:"", sub:"UX", name:"Small equipment addendum",        eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.15","$0.14","\u2014","$1.00"]},
- {sec:"V",sub:"V",  name:"CAM - Outstate Addendum",         eff:"6-1-22", r:["$8.40","$13.95","$0.45","15%","\u2014","$1.00","$0.05","$0.15","$0.16","\u2014","$1.00"]},
- {sec:"", sub:"VX", name:"Small equipment addendum",        eff:"6-1-22", r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.05","$0.15","$0.14","\u2014","$1.00"]}
+ {sec:"A",     sub:"A",  name:"AGC - Detroit Metro CBA",        eff:"6-1-25",  r:["$8.55","$13.95","$0.45","15%","\u2014","$1.20","$0.10","$0.15","$0.19","\u2014","$1.10"]},
+ {sec:"",      sub:"AX", name:"Small equipment addendum",       eff:"6-1-25",  r:["$6.65","$4.00","\u2014","15%","\u2014","$0.70","$0.10","$0.15","$0.14","\u2014","$1.00"]},
+ {sec:"B",     sub:"B",  name:"MUCG Underground Agreement",      eff:"9-1-25",  r:["$8.55","$13.95","$0.45","15%","$0.05","$1.20","$0.10","$0.03","$0.16","$0.06","$1.00"]},
+ {sec:"",      sub:"BX", name:"Class V Operator",                eff:"9-1-25",  r:["$6.50","$4.00","\u2014","15%","\u2014","$0.50","$0.10","$0.03","\u2014","$0.06","$1.00"]},
+ {sec:"C",     sub:"C",  name:"AGC - Outstate Addendum",         eff:"6-1-25",  r:["$8.55","$13.95","$0.45","15%","\u2014","$1.20","$0.10","$0.15","$0.16","\u2014","$1.00"]},
+ {sec:"",      sub:"CX", name:"Small equipment addendum",        eff:"6-1-25",  r:["$6.65","$4.00","\u2014","15%","\u2014","$0.70","$0.10","$0.15","$0.14","\u2014","$1.00"]},
+ {sec:"D",     sub:"D",  name:"Distribution and Communications", eff:"5-1-26",  r:["$9.05","$13.95","$0.45","15%","\u2014","$1.70","$0.10","$0.10","$0.14","\u2014","$1.45"]},
+ {sec:"",      sub:"DX", name:"Cable-Com-Utility Engineer",      eff:"5-1-26",  r:["$6.50","$3.00","\u2014","15%","\u2014","$0.25","$0.10","$0.05","\u2014","\u2014","$1.00"]},
+ {sec:"E",     sub:"E",  name:"AGC - Upper Peninsula",           eff:"6-1-25",  r:["$8.55","$13.95","$0.45","15%","\u2014","$1.20","$0.10","$0.15","\u2014","\u2014","$0.75"]},
+ {sec:"",      sub:"EX", name:"Class E Operator",                eff:"6-1-25",  r:["$6.65","$4.00","$0.10","15%","\u2014","$0.90","$0.10","$0.15","\u2014","\u2014","$0.75"]},
+ {sec:"G",     sub:"G",  name:"National Pipeline Agreement",     eff:"6-2-25",  r:["$8.55","$13.95","$0.45","15%","$0.02","$1.25","\u2014","\u2014","$0.15","\u2014","$2.35"]},
+ {sec:"H",     sub:"H",  name:"Highway, Bridge & Airport Agmt.", eff:"6-1-25",  r:["$8.55","$13.95","$0.45","15%","$0.05","$1.20","$0.10","$0.03","$0.16","$0.10","$1.00"]},
+ {sec:"",      sub:"HX", name:"Class V Operator",                eff:"6-1-25",  r:["$6.65","$4.00","\u2014","15%","\u2014","$0.70","$0.10","$0.03","\u2014","$0.10","$1.00"]},
+ {sec:"H U.P.",sub:"HU", name:"Highway, Bridge & Airport Agmt.", eff:"6-1-25",  r:["$8.55","$13.95","$0.45","15%","$0.05","$1.20","$0.10","$0.08","$0.16","$0.05","$1.00"]},
+ {sec:"",      sub:"HUX",name:"Class V Operator",                eff:"6-1-25",  r:["$6.65","$4.00","\u2014","15%","\u2014","$0.70","$0.10","$0.08","\u2014","$0.05","$1.00"]},
+ {sec:"J",     sub:"J",  name:"Great Lakes Fab & Erector Assn",  eff:"6-1-25",  r:["$8.55","$13.95","$0.45","15%","$0.05","$1.20","$0.10","$0.36","$0.19","\u2014","$4.00"]},
+ {sec:"",      sub:"JX", name:"Oiler - Ground Man, etc.",        eff:"6-1-25",  r:["$6.65","$4.00","\u2014","15%","\u2014","$0.65","$0.10","$0.36","$0.14","\u2014","$4.00"]},
+ {sec:"K",     sub:"K",  name:"Floating - Grt. Lakes & Marine",  eff:"6-1-25",  r:["$8.55","$13.95","$0.45","$7.72","$0.05","$1.20","$0.10","\u2014","$0.25","\u2014","$1.00"]},
+ {sec:"O",     sub:"O",  name:"Owner - Operator",                eff:"10-1-25", r:["$11.82","$13.95","$0.45","\u2014","\u2014","$1.20","$0.10","\u2014","$0.19","\u2014","$1.10"]},
+ {sec:"S",     sub:"S",  name:"Shop Agreement",                  eff:"",        r:["\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","\u2014","\u2014"]},
+ {sec:"U",     sub:"U",  name:"CAM - S E Michigan",              eff:"6-1-25",  r:["$8.55","$13.95","$0.45","15%","\u2014","$1.20","$0.10","$0.15","$0.19","\u2014","$1.10"]},
+ {sec:"",      sub:"UX", name:"Small equipment addendum",        eff:"6-1-25",  r:["$6.65","$4.00","\u2014","15%","\u2014","$0.70","$0.10","$0.15","$0.14","\u2014","$1.00"]},
+ {sec:"V",     sub:"V",  name:"CAM - Outstate Addendum",         eff:"6-1-25",  r:["$8.55","$13.95","$0.45","15%","\u2014","$1.20","$0.10","$0.15","$0.16","\u2014","$1.00"]},
+ {sec:"",      sub:"VX", name:"Small equipment addendum",        eff:"6-1-25",  r:["$6.65","$4.00","\u2014","15%","\u2014","$0.70","$0.10","$0.15","$0.14","\u2014","$1.00"]}
 ];
 
 function fresh(){
@@ -526,8 +560,8 @@ function fresh(){
       minHours:0, stdSalaried:null, payWeeks:4, weekEndDay:6,
       periods:{},
       payrollTo:"", payrollCc:"", payrollFrom:"vsaul@northerntireinc.com", reminderTo:"vickisaul@me.com",
-      agreement:"S", formNo:"Form 3022 \u00b7 Remittance Report", formRev:"REV. 6/22",
-      maxHours:0, contractLabel:"", contractEff:"",
+      agreement:"S", formNo:"FORM 3029 \u00b7 Remittance Report", formRev:"REV. 5/26",
+      maxHours:0, contractLabel:"", contractEff:"", syncUrl:"", syncKey:"", tsMap:{}, tsLast:"",
       funds:[
         {id:id(),name:"Health Care",            rate:9.28, basis:"hr", mgmt:true},
         {id:id(),name:"Pension",                rate:6.81, basis:"hr", mgmt:false},
@@ -560,7 +594,7 @@ function fresh(){
 }
 var S=load()||fresh();
 if(!S.currentMonth)S.currentMonth=thisMonth;
-function persist(){store(S);}
+function persist(){ store(S); if(typeof schedulePush==="function" && !syncApplying) schedulePush(); }
 /* one-time: Shop Agreement employees are hourly (time-clock based) */
 if(!S.migratedHourlyV3){ (S.employees||[]).forEach(function(e){e.type="hourly";}); S.migratedHourlyV3=true; persist(); }
 /* one-time: management / non-union coverage + Lee Woods (health care only) */
@@ -637,6 +671,20 @@ if(!S.migratedContractV12){
   if(S.settings.contractLabel==null) S.settings.contractLabel="";
   if(S.settings.contractEff==null) S.settings.contractEff="";
   S.migratedContractV12=true; persist();
+}
+/* one-time: cloud sync config */
+if(!S.migratedSyncV13){
+  if(S.settings.syncUrl==null) S.settings.syncUrl="";
+  if(S.settings.syncKey==null) S.settings.syncKey="";
+  if(S.settings.tsMap==null) S.settings.tsMap={};
+  if(S.settings.tsLast==null) S.settings.tsLast="";
+  S.migratedSyncV13=true; persist();
+}
+/* one-time: move facsimile to Form 3029 REV 5/26 (only if still on the old 3022/6-22 default) */
+if(!S.migrated3029V14){
+  if(!S.settings.formNo || /3022/.test(S.settings.formNo)) S.settings.formNo="FORM 3029 \u00b7 Remittance Report";
+  if(!S.settings.formRev || /6\/22/.test(S.settings.formRev)) S.settings.formRev="REV. 5/26";
+  S.migrated3029V14=true; persist();
 }
 function monthData(){if(!S.months[S.currentMonth])S.months[S.currentMonth]={};return S.months[S.currentMonth];}
 function entry(eid){var m=monthData();if(!m[eid])m[eid]={worked:0,sick:0,vac:0,salHours:0,base:0};return m[eid];}
@@ -938,6 +986,7 @@ function formP1(cov,title){
   S.settings.funds.forEach(function(f){
     var on=applies(f)&&Number(f.rate)>0&&((f.basis==="pct"?pb[f.id]:ph[f.id])>0);
     remit+='<tr>'
+      +'<td class="rx romit"></td>'
       +'<td class="rf">'+esc(f.name.toUpperCase())+'</td>'
       +'<td class="rr">'+(on?"$"+money(f.rate):"")+'</td>'
       +'<td class="rx">'+(on?"x":"")+'</td>'
@@ -950,9 +999,9 @@ function formP1(cov,title){
   return '<div class="gform p1">'
     +'<div class="ghdr">'
       +'<div class="hbox hb-left">'
-        +'<div class="tiny">Federal law requires each employer to furnish the following information:</div>'
+        +'<div class="tiny">Federal law requires each employer to furnish the following information: (please check any that are applicable)</div>'
         +'<div class="chk"><span class="box"></span> We had no employees performing work covered by our Oper. Eng. Local 324 agreement(s) during the month.</div>'
-        +'<div class="chk"><span class="box"></span> Final Report &ndash; Inactive Status request</div>'
+        +'<div class="chk"><span class="box"></span> Final Report &ndash; Inactive Status request (see reverse for further instructions)</div>'
       +'</div>'
       +'<div class="hbox hb-mid">'
         +'<div class="bigttl">OPERATING ENGINEERS</div>'
@@ -961,9 +1010,11 @@ function formP1(cov,title){
         +'<div class="subttl">OF THE MONTH FOLLOWING THE MONTH WORKED</div>'
       +'</div>'
       +'<div class="hbox hb-right">'
-        +'<div class="tiny">'+esc(s.formNo||"Form 3022 \u00b7 Remittance Report")+'</div>'
-        +'<div class="rev">'+esc(s.formRev||"REV. 6/22")+'</div>'
+        +'<div class="tiny" style="font-weight:800">'+esc(s.formNo||"FORM 3029 \u00b7 Remittance Report")+'</div>'
+        +'<div class="rev">'+esc(s.formRev||"REV. 5/26")+'</div>'
         +'<div class="tiny">Employers Monthly Fringe Benefit Report</div>'
+        +'<div class="chk" style="margin-top:4px"><span class="box"></span> Please send more paper forms</div>'
+        +'<div class="chk"><span class="box"></span> Please contact me regarding my online reporting options</div>'
       +'</div>'
     +'</div>'
     +'<div class="grow">'
@@ -978,23 +1029,24 @@ function formP1(cov,title){
     +'</div>'
     +'<div class="grow">'
       +'<div class="gc gc-name"><span class="lab">City and State / ZIP</span><span class="v">'+esc(s.city)+'</span></div>'
-      +'<div class="gc"><span class="lab">Special Agmt / Job Site (if applicable)</span><span class="v"></span></div>'
-      +'<div class="gc"><span class="lab">NMA / GPPMA</span><span class="v"></span></div>'
+      +'<div class="gc"><span class="lab">Special Agmt / Job Site (if applicable)</span><span class="v" style="font-size:7.5px"><span style="display:inline-block;width:7px;height:7px;border:1px solid #000;vertical-align:middle"></span> NMA &nbsp; <span style="display:inline-block;width:7px;height:7px;border:1px solid #000;vertical-align:middle"></span> GPPMA</span></div>'
+      +'<div class="gc"><span class="lab">Work Site / Notes</span><span class="v"></span></div>'
     +'</div>'
     +'<div class="band">Type or Area of Construction and Fringe Benefit Rates</div>'
-    +'<div class="bandsub">Please mark the appropriate agreement. The agreement being reported is marked &ldquo;X&rdquo; below.</div>'
+    +'<div class="bandsub">Please indicate the area or kind of construction being reported. Mark the appropriate agreement &ldquo;X&rdquo; below; the rates auto-populate from the marked section.</div>'
     +'<table class="agt"><thead><tr>'
       +'<th class="sec">Sec</th><th class="mk">X</th><th class="agn">Agreement</th><th>Eff.<br>Date</th>'
       +'<th>Health<br>Care</th><th>Pension</th><th>Retiree<br>Benefit</th><th>Vac. &amp;<br>Holiday</th>'
       +'<th>Suppl.<br>Vac.</th><th>Appr. &amp;<br>Train.</th><th>IUOE<br>NTF</th><th>Ind. Adv.<br>&amp; Promo</th>'
       +'<th>324<br>LMEC</th><th>Ind. Lbr<br>Mgmt</th><th>Def.<br>Contrib.</th>'
     +'</tr></thead><tbody>'+agtBody+'</tbody></table>'
-    +'<div class="band band2">Remittance</div>'
-    +'<table class="remt"><thead><tr><th class="rf">Fringe Benefit Fund</th><th class="rr">Contribution Rate</th><th class="rx"></th><th class="rm">Multiplier<br>(Total Hrs / Wgs)</th><th class="ra">Amount</th><th class="radj">Adjustments</th><th class="rt">Total</th></tr></thead>'
+    +'<div class="band band2">See reverse side for additional instructions and the listing of Operating Engineers in your employ during the month being reported.</div>'
+    +'<table class="remt"><thead><tr><th class="rx">Omit</th><th class="rf">Remittance &mdash; Fringe Benefit Fund</th><th class="rr">Contribution Rate</th><th class="rx"></th><th class="rm">Multiplier<br>(Total Hrs / Wgs &mdash; reverse)</th><th class="ra">Amount</th><th class="radj">Adjustments</th><th class="rt">Total</th></tr></thead>'
     +'<tbody>'+remit+'</tbody>'
-    +'<tfoot><tr><td colspan="6" class="grl">Remittance &ndash; Make Check Payable To: Operating Engineers Fringe Benefit Funds</td><td class="rt grt">$'+money(g.t.total)+'</td></tr></tfoot></table>'
+    +'<tfoot><tr><td colspan="7" class="grl">Remittance &ndash; Make Check Payable To: Operating Engineers Fringe Benefit Funds</td><td class="rt grt">$'+money(g.t.total)+'</td></tr></tfoot></table>'
+    +'<div class="gfill"></div>'
     +'<div class="mailrow">'
-      +'<div class="mailto"><b>Please mail original copy with check to:</b><br>Operating Engineers Local 324 Fringe Benefit Funds<br>550 Hulet Dr. Suite 103<br>Bloomfield Twp., MI 48302</div>'
+      +'<div class="mailto"><b>Please mail original copy with check to:</b><br>Operating Engineers Local 324 Fringe Benefit Funds<br>550 Hulet Dr. Suite 103, Bloomfield Twp., MI 48302<br><span style="font-style:italic">Save time and postage &mdash; file and pay online. Call the Fund Office 248-836-2765 to learn how.</span></div>'
       +'<div class="packetnote">'+esc(title)+(cov==="mgmt"?" &mdash; Health Care only (non-union / management)":"")+'</div>'
     +'</div>'
   +'</div>';
@@ -1010,30 +1062,43 @@ function formP2(cov){
   var target=24;
   for(var i=n;i<target;i++){ rows+='<tr><td class="ln">&nbsp;</td><td class="ini"></td><td class="ssn"></td><td class="hp"></td><td class="bw"></td></tr>'; }
   return '<div class="gform p2">'
-    +'<div class="p2title">Operating Engineers Local 324 Fringe Benefit Funds</div>'
+    +'<div class="ghdr">'
+      +'<div class="hbox" style="width:72%;display:flex;align-items:center;justify-content:center;text-align:center">'
+        +'<div class="bigttl" style="font-size:13px">OPERATING ENGINEERS LOCAL 324 FRINGE BENEFIT FUNDS</div>'
+      +'</div>'
+      +'<div class="hbox" style="width:28%;text-align:center">'
+        +'<div class="tiny" style="font-weight:800">'+esc(String(s.formNo||"FORM 3029").replace(/\s*\u00b7.*$/,""))+'</div>'
+        +'<div class="rev" style="font-size:12px">'+esc(s.formRev||"REV. 5/26")+'</div>'
+        +'<div class="tiny">Employee Detail Report for<br>Employers&rsquo; Monthly Fringe Benefit Report</div>'
+      +'</div>'
+    +'</div>'
     +'<div class="p2meta">'
       +'<div class="gc gc-name"><span class="lab">Contractor&rsquo;s Name</span><span class="v">'+esc(s.employer)+'</span></div>'
       +'<div class="gc"><span class="lab">Contractor Number</span><span class="v">'+esc(s.code)+'</span></div>'
       +'<div class="gc"><span class="lab">Work Month</span><span class="v">'+esc(monthName())+'</span></div>'
-      +'<div class="gc gc-pg"><span class="lab">Pages</span><span class="v">1</span></div>'
+      +'<div class="gc gc-pg"><span class="lab">No. of Pages<br>This Report</span><span class="v">1</span></div>'
     +'</div>'
     +'<div class="p2body">'
-      +'<table class="dett"><thead><tr><th class="ln">Employee&rsquo;s Name &ndash; Last Name</th><th class="ini">Initials</th><th class="ssn">Social Security Number</th><th class="hp">A<br>Hours Paid</th><th class="bw">B<br>Base Wages</th></tr></thead>'
+      +'<table class="dett"><thead><tr><th class="ln">Employee&rsquo;s Name &ndash; Last Name</th><th class="ini">Initials</th><th class="ssn">Social Security Number</th><th class="hp">A<br>Hours Paid*</th><th class="bw">B<br>Base Wages &ndash; See Instr. No. 2</th></tr></thead>'
       +'<tbody>'+rows+'</tbody>'
       +'<tfoot><tr><td colspan="3" class="totlbl">Totals This Sheet</td><td class="hp">'+hrs(th)+'</td><td class="bw">'+(tb?money(tb):"")+'</td></tr></tfoot></table>'
       +'<div class="p2side">'
         +'<div class="sidettl">Instructions</div>'
-        +'<div class="sidep">Report each Operating Engineer employed during the month, listing hours paid. For combined work under two or more agreements, report under the appropriate section.</div>'
-        +'<div class="sidep">Payments are due by the 15th of the following month. Late payments are subject to liquidated damages and interest.</div>'
-        +'<div class="sidenotice">NOTICE: For fringe benefit contribution purposes, an overtime hour is contributed as one hour. This does not pertain to the Vacation &amp; Holiday Fund.</div>'
-        +'<div class="sideimp">By filing this report, the above named Employer certifies the accuracy of the information and agrees to be bound by all terms of payment to the named Funds as set forth in the current applicable Collective Bargaining Agreements and Trust Agreements.</div>'
+        +'<div class="sidep">1. If you are performing work under more than one Contract as noted on the Monthly Remittance Report, a <b>separate report</b> must be filed for each agreement. Do not combine reports of two or more areas or agreements for the same month.</div>'
+        +'<div class="sidep">2. Vacation Pay is computed on wages shown in column B. Total Vacation Pay is to be added to Base Pay to compute applicable payroll taxes.</div>'
+        +'<div class="sidep">3. Payments are due by the 15th of the following month. If payment is not received by the end of the month, liquidated damages will be assessed and billed at 18% per annum, computed from the 15th of the month to the date of payment.</div>'
+        +'<div class="sidep">4. For information concerning Fringe Benefit Contributions, call 248-836-2765, or by mail: 550 Hulet Dr. Suite 103, Bloomfield Twp., MI 48302.</div>'
+        +'<div class="sidep">5. All owner-operators who participate in Local 324&rsquo;s Fringe Benefit Funds must use Section O of this report. <b>ALL</b> fringes in this Section must be paid at a minimum of 130 hours per month.</div>'
+        +'<div class="sidenotice">* NOTICE: For Fringe Benefit Contribution purposes, an overtime hour should be contributed on as one hour. This does not pertain to the Vacation and Holiday Fund.</div>'
+        +'<div class="sideimp"><b>**IMPORTANT**</b> You may request &ldquo;Inactive Status&rdquo; by marking the box in the upper corner of the reverse side of this form. You will be contacted by a Fund Coordinator for further instructions. You will automatically become active once you start submitting Fringe Contributions again. If you have an anticipated date of return for seasonal work, please indicate: &nbsp;Mo: ______ &nbsp;Year: ______</div>'
+        +'<div class="sideimp">By filing this report, the above named Employer certifies the accuracy of information on the report and agrees to be bound by all the terms of payment to the foregoing named Funds as set forth in the current applicable Collective Bargaining Agreements between Operating Engineers Local 324 and the Employer or Employer Associations, and to all the terms of the Trust Agreements of these Funds.</div>'
         +'<div class="sig"><div class="sigline">'+esc(s.signer||"Vicki Saul")+'</div><div class="siglab">Employer or Authorized Agent</div><div class="sigtitle">'+esc(s.signerTitle||"V.P. / Sec. / Treas.")+'</div></div>'
       +'</div>'
     +'</div>'
   +'</div>';
 }
 function packetHTML(cov,title,sub){
-  return formP1(cov,title)+formP2(cov);
+  return '<div class="sheet">'+formP1(cov,title)+'</div><div class="sheet">'+formP2(cov)+'</div>';
 }
 function renderPrint(){
   var u=document.getElementById("packetUnion"); if(!u) return;
@@ -1071,9 +1136,27 @@ function renderPrint(){
     }
   }
 }
-function clearPrint(){ document.body.classList.remove("print-union","print-mgmt","print-form"); var fp=document.getElementById("formPrint"); if(fp)fp.innerHTML=""; }
+function fitForms(){
+  /* Scale each form to fill ~95% of a full Letter page (816x1056px @96dpi),
+     centered on the sheet. The ~5% keeps content off the printer's hardware edge. */
+  var pageW=816*0.95, pageH=1056*0.95;
+  var forms=document.querySelectorAll("#tab-print .gform");
+  Array.prototype.forEach.call(forms,function(el){
+    el.style.transform="none"; el.style.zoom="1"; el.style.width="860px"; el.style.maxWidth="none"; el.style.minHeight="0";
+    var w=el.scrollWidth||860, h=el.scrollHeight||1;
+    var k=Math.min(pageW/w, pageH/h, 1);
+    el.style.setProperty("--k", String(Math.floor(k*1000)/1000));
+    el.style.transform=""; el.style.width=""; el.style.maxWidth=""; el.style.minHeight="";
+  });
+}
+function resetForms(){
+  var forms=document.querySelectorAll("#tab-print .gform");
+  Array.prototype.forEach.call(forms,function(el){ el.style.removeProperty("--k"); el.style.transform=""; el.style.zoom=""; el.style.width=""; el.style.maxWidth=""; el.style.minHeight=""; });
+}
+function clearPrint(){ document.body.classList.remove("print-union","print-mgmt","print-form"); var fp=document.getElementById("formPrint"); if(fp)fp.innerHTML=""; resetForms(); }
 window.printGroup=function(which){
   renderPrint();
+  fitForms();
   document.body.classList.add(which==="mgmt"?"print-mgmt":"print-union");
   setTimeout(function(){ window.print(); },80);
 };
@@ -1230,6 +1313,8 @@ function renderSetup(){
       +'<td style="text-align:center"><input type="checkbox" '+(f.mgmt?"checked":"")+' data-fid="'+f.id+'" data-k="mgmt" onchange="onFund(this)" title="Applies to management / non-union employees"></td>'
       +'<td class="r"><button class="btn sm danger" onclick="rmFund(\''+f.id+'\')">&times;</button></td></tr>';
   }).join("");
+  if(typeof renderSync==="function") renderSync();
+  if(typeof renderTsInit==="function") renderTsInit();
 }
 function set(idv,val){var el=document.getElementById(idv);if(el)el.value=(val==null?"":val);}
 window.onFund=function(inp){
@@ -1262,6 +1347,8 @@ function bindSetup(){
   bind("setAgmt",function(v){S.settings.agreement=v;renderPrint();});
   bind("setFormNo",function(v){S.settings.formNo=v;renderPrint();});
   bind("setFormRev",function(v){S.settings.formRev=v;renderPrint();});
+  bind("syncUrl",function(v){S.settings.syncUrl=v.trim();renderSync();});
+  bind("syncKey",function(v){S.settings.syncKey=v.trim();renderSync();});
 }
 function bind(idv,fn){document.getElementById(idv).addEventListener("input",function(){fn(this.value);persist();});}
 
@@ -1516,6 +1603,189 @@ function renderContractHist(){
 }
 function fmtFull(iso){var d=parseD(iso);return d?d.toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}):iso;}
 
+/* ---------- cloud sync (Supabase REST + Auth, no libraries) ---------- */
+var SESS_KEY="ntiFringeRemit.session", syncApplying=false, syncPendingEmail=null, syncLastTs=0, syncPushTimer=null;
+function sess(){ try{var r=localStorage.getItem(SESS_KEY);return r?JSON.parse(r):null;}catch(e){return null;} }
+function setSess(s){ try{ if(s)localStorage.setItem(SESS_KEY,JSON.stringify(s)); else localStorage.removeItem(SESS_KEY); }catch(e){} }
+function sbBase(){ return String(S.settings.syncUrl||"").trim().replace(/\/+$/,""); }
+function sbConfigured(){ return !!(sbBase() && String(S.settings.syncKey||"").trim()); }
+function authHeaders(){ var t=sess(), h={"apikey":String(S.settings.syncKey||"").trim(),"Content-Type":"application/json"}; if(t&&t.access_token)h["Authorization"]="Bearer "+t.access_token; return h; }
+function signedIn(){ var t=sess(); return !!(sbConfigured()&&t&&t.access_token); }
+function syncChip(state){ var c=document.getElementById("syncChip"); if(!c)return; c.className="syncchip "+(state||"off"); c.textContent=(state==="on"?"on":state==="busy"?"\u2026":state==="err"?"error":"off"); }
+function syncMsg(t,kind){ var el=document.getElementById("syncStatus"); if(el){ el.textContent=t||""; el.style.color=(kind==="err"?"#a33":kind==="on"?"#2a6":"var(--muted)"); } }
+function syncDoc(){ var d=JSON.parse(JSON.stringify(S)); if(Array.isArray(d.employees))d.employees.forEach(function(e){delete e.ssn;}); return d; }
+function applyRemote(doc){
+  if(!doc||typeof doc!=="object"||!doc.settings||!Array.isArray(doc.employees)) return false;
+  var localSSN={}; (S.employees||[]).forEach(function(e){ if(e.ssn) localSSN[e.id]=e.ssn; });
+  doc.employees.forEach(function(e){ e.ssn=localSSN[e.id]||""; });
+  doc.settings.syncUrl=S.settings.syncUrl||doc.settings.syncUrl||"";
+  doc.settings.syncKey=S.settings.syncKey||doc.settings.syncKey||"";
+  syncApplying=true; S=doc; store(S); syncApplying=false; renderAll(); return true;
+}
+async function ensureToken(){
+  var t=sess(); if(!t||!t.access_token) return t;
+  if(t.expires_at && Date.now() < (t.expires_at-30000)) return t;
+  if(!t.refresh_token) return t;
+  try{
+    var r=await fetch(sbBase()+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":String(S.settings.syncKey||"").trim(),"Content-Type":"application/json"},body:JSON.stringify({refresh_token:t.refresh_token})});
+    if(r.ok){ var j=await r.json(); var ns={email:t.email,user_id:(j.user&&j.user.id)||t.user_id,access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+((j.expires_in||3600)*1000)}; setSess(ns); return ns; }
+  }catch(e){}
+  return t;
+}
+window.syncSendCode=async function(){
+  if(!sbConfigured()){ syncMsg("Enter your Supabase URL and key first.","err"); return; }
+  var email=String((document.getElementById("syncEmail")||{}).value||"").trim();
+  if(!email){ syncMsg("Enter your email.","err"); return; }
+  syncChip("busy"); syncMsg("Sending code\u2026","");
+  try{
+    var r=await fetch(sbBase()+"/auth/v1/otp",{method:"POST",headers:{"apikey":String(S.settings.syncKey||"").trim(),"Content-Type":"application/json"},body:JSON.stringify({email:email,create_user:true})});
+    if(r.ok){ setSess({email:email}); syncPendingEmail=email; renderSync(); syncMsg("Code sent to "+email+". Enter it below.",""); }
+    else { var tx=await r.text(); syncMsg("Couldn\u2019t send code: "+tx.slice(0,160),"err"); syncChip("err"); }
+  }catch(e){ syncMsg("Network error sending code (check the URL).","err"); syncChip("err"); }
+};
+window.syncVerify=async function(){
+  var email=syncPendingEmail||((sess()||{}).email)||"";
+  var code=String((document.getElementById("syncCode")||{}).value||"").trim();
+  if(!email||!code){ syncMsg("Enter the 6-digit code.","err"); return; }
+  syncChip("busy"); syncMsg("Verifying\u2026","");
+  try{
+    var r=await fetch(sbBase()+"/auth/v1/verify",{method:"POST",headers:{"apikey":String(S.settings.syncKey||"").trim(),"Content-Type":"application/json"},body:JSON.stringify({email:email,token:code,type:"email"})});
+    var j=await r.json();
+    if(r.ok && j.access_token){
+      setSess({email:email,user_id:(j.user&&j.user.id)||"",access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+((j.expires_in||3600)*1000)});
+      syncPendingEmail=null; renderSync(); syncMsg("Signed in. Syncing\u2026","");
+      await syncPull(); await syncPush(); syncMsg("Synced \u00b7 "+new Date().toLocaleTimeString(),"on");
+    } else { syncMsg("Invalid or expired code.","err"); syncChip("err"); }
+  }catch(e){ syncMsg("Network error verifying.","err"); syncChip("err"); }
+};
+window.syncSignOut=function(){ setSess(null); syncPendingEmail=null; renderSync(); syncChip("off"); syncMsg("Signed out on this device.",""); };
+window.syncNow=async function(){ if(!signedIn()){ syncMsg("Sign in first.","err"); return; } await syncPull(); await syncPush(); };
+async function syncPull(){
+  if(!signedIn()) return;
+  var t=await ensureToken(); if(!t||!t.access_token) return;
+  try{
+    var r=await fetch(sbBase()+"/rest/v1/fringe_state?select=doc,updated_at",{headers:authHeaders()});
+    if(r.status===401){ syncChip("err"); syncMsg("Session expired \u2014 sign in again.","err"); return; }
+    if(!r.ok){ var tx=await r.text(); syncMsg("Pull failed: "+tx.slice(0,140),"err"); syncChip("err"); return; }
+    var rows=await r.json();
+    if(rows&&rows.length&&rows[0].doc){
+      var remoteTs=Date.parse(rows[0].updated_at||"")||0;
+      if(remoteTs > (syncLastTs||0)){ applyRemote(rows[0].doc); syncLastTs=remoteTs; }
+    }
+    syncChip("on"); syncMsg("Up to date \u00b7 "+new Date().toLocaleTimeString(),"on");
+  }catch(e){ syncMsg("Network error during pull.","err"); syncChip("err"); }
+}
+async function syncPush(){
+  if(syncApplying || !signedIn()) return;
+  var t=await ensureToken(); if(!t||!t.user_id){ syncMsg("Can\u2019t save \u2014 missing account id; sign in again.","err"); return; }
+  syncChip("busy");
+  try{
+    var nowIso=new Date().toISOString();
+    var body=[{user_id:t.user_id, doc:syncDoc(), updated_at:nowIso}];
+    var r=await fetch(sbBase()+"/rest/v1/fringe_state?on_conflict=user_id",{method:"POST",headers:Object.assign({},authHeaders(),{"Prefer":"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(body)});
+    if(r.ok){ syncLastTs=Date.parse(nowIso); syncChip("on"); syncMsg("Saved \u00b7 "+new Date().toLocaleTimeString(),"on"); }
+    else { var tx=await r.text(); syncMsg("Save failed: "+tx.slice(0,160),"err"); syncChip("err"); }
+  }catch(e){ syncMsg("Network error during save.","err"); syncChip("err"); }
+}
+function schedulePush(){ if(!signedIn())return; if(syncPushTimer)clearTimeout(syncPushTimer); syncPushTimer=setTimeout(function(){ syncPush(); },1500); }
+function renderSync(){
+  var box=document.getElementById("syncAuth");
+  set("syncUrl",S.settings.syncUrl||""); set("syncKey",S.settings.syncKey||"");
+  if(!box) return;
+  var t=sess();
+  if(!sbConfigured()){ box.innerHTML='<div class="footnote">Paste your NTI Supabase project URL and anon key above to turn on sync.</div>'; syncChip("off"); return; }
+  if(t && t.access_token){
+    box.innerHTML='<div class="prtsum" style="margin-bottom:6px">Signed in as <b>'+esc(t.email||"")+'</b> on this device</div>'
+      +'<div class="btnrow" style="margin:0"><button class="btn ghost sm" onclick="syncNow()">Sync now</button><button class="btn ghost sm" onclick="syncSignOut()">Sign out</button></div>';
+    syncChip("on");
+  } else if(syncPendingEmail || (t && t.email)){
+    var em=esc(syncPendingEmail||t.email);
+    box.innerHTML='<div class="field" style="max-width:300px"><label>Code emailed to '+em+'</label><input type="text" id="syncCode" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code"></div>'
+      +'<div class="btnrow" style="margin-top:8px"><button class="btn brass sm" onclick="syncVerify()">Verify &amp; sign in</button><button class="btn ghost sm" onclick="syncSignOut()">Cancel</button></div>';
+    syncChip("off");
+  } else {
+    box.innerHTML='<div class="field" style="max-width:340px"><label>Email <span class="sub">we\u2019ll send a one-time sign-in code</span></label><input type="email" id="syncEmail" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="you@example.com"></div>'
+      +'<div class="btnrow" style="margin-top:8px"><button class="btn brass sm" onclick="syncSendCode()">Send code</button></div>';
+    syncChip("off");
+  }
+}
+
+/* ===== TimeStation pull ===== */
+function tsFnUrl(){ return sbBase()+"/functions/v1/timestation-pull"; }
+function tsMsg(m,cls){ var el=document.getElementById("tsMsg"); if(el){ el.textContent=m||""; el.className="footnote"+(cls?(" "+cls):""); } }
+function tsChip(state){ var c=document.getElementById("tsChip"); if(!c)return; c.className="syncchip "+(state==="on"?"on":state==="err"?"err":"off"); c.textContent=(state==="on"?"ready":state==="err"?"error":"off"); }
+var tsEmpCache=[];
+async function tsCall(qs){
+  if(!sbConfigured()){ throw new Error("Set up Cloud sync first (Supabase URL + key)."); }
+  if(!signedIn()){ throw new Error("Sign in under Cloud sync first."); }
+  var t=await ensureToken(); if(!t||!t.access_token){ throw new Error("Session expired \u2014 sign in again under Cloud sync."); }
+  var r=await fetch(tsFnUrl()+qs,{headers:authHeaders()});
+  var j=null; try{ j=await r.json(); }catch(e){}
+  if(!r.ok){ throw new Error((j&&j.error)||("Function error "+r.status+" \u2014 is timestation-pull deployed in your NTI project?")); }
+  return j;
+}
+window.tsLoadEmployees=async function(){
+  tsMsg("Loading employees from TimeStation\u2026","");
+  try{
+    var j=await tsCall("?action=employees");
+    tsEmpCache=(j&&j.employees)||[];
+    renderTsMap();
+    if(tsEmpCache.length){ tsMsg(tsEmpCache.length+" TimeStation employee(s) found. Match each to your people, then Save.",""); tsChip("on"); }
+    else { tsMsg("No employees came back from TimeStation. Check the API key on the server.","err"); }
+  }catch(e){ tsMsg(String(e.message||e),"err"); tsChip("err"); }
+};
+function renderTsMap(){
+  var box=document.getElementById("tsMapBox"); if(!box) return;
+  if(!tsEmpCache.length){ box.innerHTML=""; return; }
+  var map=S.settings.tsMap||{};
+  var opts=function(sel){ var h='<option value="">\u2014 none \u2014</option>'; tsEmpCache.forEach(function(te){ h+='<option value="'+esc(te.employee_id)+'"'+(sel===te.employee_id?" selected":"")+'>'+esc(te.name)+(te.custom_employee_id?(" ("+esc(te.custom_employee_id)+")"):"")+'</option>'; }); return h; };
+  var rows="";
+  S.employees.forEach(function(emp){
+    rows+='<tr><td style="padding:4px 10px 4px 0;white-space:nowrap"><b>'+esc(emp.name)+'</b>'+(emp.type==="salaried"?' <span class="sub">(monthly)</span>':'')+'</td>'
+      +'<td style="padding:4px 0"><select class="tsmapsel" data-eid="'+esc(emp.id)+'" style="min-width:210px">'+opts(map[emp.id]||"")+'</select></td></tr>';
+  });
+  box.innerHTML='<table style="border-collapse:collapse;margin-bottom:8px"><tbody>'+rows+'</tbody></table>'
+    +'<div class="btnrow" style="margin:0"><button class="btn brass sm" onclick="tsSaveMap()">Save matches</button></div>';
+}
+window.tsSaveMap=function(){
+  var sels=document.querySelectorAll(".tsmapsel"), map={};
+  sels.forEach(function(s){ var eid=s.getAttribute("data-eid"); if(s.value) map[eid]=s.value; });
+  S.settings.tsMap=map; persist();
+  var n=Object.keys(map).length;
+  tsMsg("Saved "+n+" match"+(n===1?"":"es")+". Pull hours from the Shop Report tab.","");
+  tsChip(n>0?"on":"off");
+};
+window.tsPull=async function(){
+  var p=periodFor(S.currentMonth); if(!p||!p.start||!p.end){ alert("No pay period set for this month."); return; }
+  var map=S.settings.tsMap||{};
+  if(!Object.keys(map).length){ alert("Match your TimeStation people first:\nSetup \u2192 TimeStation \u2192 Load & map employees."); gotoTab("setup"); return; }
+  var btns=document.querySelectorAll('button[onclick="tsPull()"]'); btns.forEach(function(b){b.disabled=true;b.textContent="Pulling\u2026";});
+  try{
+    var j=await tsCall("?action=summary&start="+encodeURIComponent(p.start)+"&end="+encodeURIComponent(p.end));
+    var byId={}; ((j&&j.employees)||[]).forEach(function(te){ byId[te.employee_id]=te; });
+    var applied=[], missing=[];
+    S.employees.forEach(function(emp){
+      var tsid=map[emp.id]; if(!tsid) return;
+      var te=byId[tsid]; if(!te){ missing.push(lastName(emp.name)); return; }
+      var hh=Math.round((Number(te.hours)||0)*100)/100; var e=entry(emp.id);
+      if(emp.type==="salaried"){ e.salHours=hh; } else { e.worked=hh; }
+      applied.push(lastName(emp.name)+" "+hrs(hh));
+    });
+    S.settings.tsLast=new Date().toISOString();
+    persist(); renderAll();
+    var msg="Pulled "+p.start+"\u2013"+p.end+": "+(applied.join(", ")||"nothing matched");
+    if(missing.length) msg+=" \u00b7 no clock data for: "+missing.join(", ");
+    alert(msg);
+  }catch(e){ alert(String(e.message||e)); }
+  finally{ var bb=document.querySelectorAll('button[onclick="tsPull()"]'); bb.forEach(function(b){b.disabled=false;b.textContent="Pull hours from TimeStation";}); }
+};
+function renderTsInit(){
+  var n=Object.keys((S.settings&&S.settings.tsMap)||{}).length;
+  tsChip(n>0 && (typeof signedIn==="function"&&signedIn()) ? "on":"off");
+  var box=document.getElementById("tsMapBox");
+  if(n>0 && box && !tsEmpCache.length){ box.innerHTML='<div class="footnote">'+n+' employee match'+(n===1?"":"es")+' saved. Click \u201cLoad &amp; map employees\u201d to review or change.</div>'; }
+}
+
 /* tabs */
 var tb=document.querySelectorAll("nav.tabs button");
 tb.forEach(function(b){b.addEventListener("click",function(){
@@ -1614,6 +1884,10 @@ function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return{
 function escA(s){return String(s==null?"":s).replace(/"/g,"&quot;").replace(/</g,"&lt;");}
 
 bindSetup();renderAll();
+/* cloud sync: pull latest on open and whenever the app regains focus */
+if(typeof signedIn==="function" && signedIn()){ syncPull(); }
+window.addEventListener("focus", function(){ if(typeof signedIn==="function" && signedIn()) syncPull(); });
+document.addEventListener("visibilitychange", function(){ if(!document.hidden && typeof signedIn==="function" && signedIn()) syncPull(); });
 </script>
 </body>
 </html>
