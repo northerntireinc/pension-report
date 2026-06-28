@@ -1930,14 +1930,16 @@ window.tsPullWeek=async function(){
   try{
     var j=await tsCall("?action=summary&start="+encodeURIComponent(w.start)+"&end="+encodeURIComponent(w.end));
     var byId={}; ((j&&j.employees)||[]).forEach(function(te){ byId[te.employee_id]=te; });
-    var hours={}, applied=[], missing=[];
+    var hours={}, days={}, applied=[], missing=[];
     S.employees.forEach(function(emp){
       var tsid=map[emp.id]; if(!tsid) return;
       var te=byId[tsid]; if(!te){ missing.push(lastName(emp.name)); return; }
       var hh=Math.round((Number(te.hours)||0)*100)/100;
-      hours[emp.id]=hh; applied.push(lastName(emp.name)+" "+hrs(hh));
+      hours[emp.id]=hh; days[emp.id]=(te.days&&typeof te.days==="object")?te.days:{};
+      applied.push(lastName(emp.name)+" "+hrs(hh));
     });
-    S.settings.weekPull={start:w.start,end:w.end,hours:hours,ts:new Date().toISOString()};
+    var prevHol=(S.settings.weekPull&&S.settings.weekPull.end===w.end)?(S.settings.weekPull.holidays||{}):{};
+    S.settings.weekPull={start:w.start,end:w.end,hours:hours,days:days,holidays:prevHol,ts:new Date().toISOString()};
     persist(); renderReport();
     var msg="Pulled last week "+fmtD(w.start)+"–"+fmtD(w.end)+": "+(applied.join(", ")||"nothing matched");
     if(missing.length) msg+=" · no clock data for: "+missing.join(", ");
@@ -1948,28 +1950,52 @@ window.tsPullWeek=async function(){
 
 function rpad(s,n){s=String(s);while(s.length<n)s+=" ";return s;}
 function lpadx(s,n){s=String(s);while(s.length<n)s=" "+s;return s;}
+/* ----- daily overtime / double-time per Local 324:
+   regular to 8/day · OT (1.5x) over 8/day · DT (2x) over 12/day,
+   and ALL hours on Sundays/holidays at double-time ----- */
+function weekDow(iso){ var d=parseD(iso); return d?d.getDay():-1; }
+function weekIsPremium(iso,wp){ return weekDow(iso)===0 || !!(wp&&wp.holidays&&wp.holidays[iso]); }
+function classifyEmpWeek(empId,wp){
+  var days=(wp&&wp.days&&wp.days[empId])||null, keys=days?Object.keys(days):[];
+  var reg=0,ot=0,dt=0,total=0;
+  if(keys.length){
+    keys.forEach(function(iso){
+      var h=Number(days[iso])||0; if(h<=0) return; total+=h;
+      if(weekIsPremium(iso,wp)){ dt+=h; return; }   /* Sunday/holiday: all hours 2x */
+      reg+=Math.min(8,h);                            /* first 8 = regular */
+      ot +=Math.max(0,Math.min(12,h)-8);             /* 8–12 = OT 1.5x */
+      dt +=Math.max(0,h-12);                         /* over 12 = DT 2x */
+    });
+    return {reg:reg,ot:ot,dt:dt,total:total,dated:true};
+  }
+  /* no daily detail — fall back to the weekly total as straight time */
+  var hh=(wp&&wp.hours&&wp.hours[empId]!=null)?(Number(wp.hours[empId])||0):0;
+  return {reg:hh,ot:0,dt:0,total:hh,dated:false};
+}
 function payrollWeekBody(){
   var s=S.settings, wp=s.weekPull||{hours:{}}, L=[];
   L.push(s.employer+" — Weekly Payroll");
   L.push("Week: "+fmtFull(wp.start)+" – "+fmtFull(wp.end)+" (paid the following Friday)");
   L.push("Prepared for Tandem Tax (Avery)","");
-  L.push(rpad("Employee",26)+lpadx("Hours",9));
-  L.push("----------------------------------");
-  var th=0,n=0,clT=0,hasCl=false;
+  L.push("Hours basis: regular to 8/day · OT (1.5x) over 8/day · DT (2x) over 12/day and all Sunday/holiday hours.","");
+  L.push(rpad("Employee",22)+lpadx("Reg",7)+lpadx("OT",7)+lpadx("DT",7)+lpadx("Total",8));
+  L.push("-------------------------------------------------");
+  var tReg=0,tOt=0,tDt=0,tTot=0,n=0,clT=0,hasCl=false,undated=[];
   S.employees.forEach(function(emp){
-    var hh=(wp.hours&&wp.hours[emp.id]!=null)?(Number(wp.hours[emp.id])||0):null;
-    var cl=Number(emp.clericalWeekly)||0;
-    if(hh==null && cl<=0) return;
-    n++; if(hh!=null) th+=hh;
+    var c=classifyEmpWeek(emp.id,wp), cl=Number(emp.clericalWeekly)||0;
+    if(c.total<=0 && cl<=0) return;
+    n++; tReg+=c.reg; tOt+=c.ot; tDt+=c.dt; tTot+=c.total;
+    if(c.total>0 && !c.dated) undated.push(lastName(emp.name));
     var tag=((emp.coverage||"union")==="mgmt")?" (mgmt)":"";
-    L.push(rpad(emp.name+tag,26)+lpadx(hh!=null?hrs(hh):"—",9));
-    if(cl>0){ hasCl=true; clT+=cl; L.push(rpad("   + clerical (non-pension)",26)+lpadx("$"+money(cl),9)+"  (1 wk x $"+money(emp.clericalWeekly)+")"); }
+    L.push(rpad(emp.name+tag,22)+lpadx(hrs(c.reg),7)+lpadx(hrs(c.ot),7)+lpadx(hrs(c.dt),7)+lpadx(hrs(c.total),8));
+    if(cl>0){ hasCl=true; clT+=cl; L.push(rpad("   + clerical (non-pension)",22)+lpadx("+$"+money(cl),29)); }
   });
   if(!n) L.push("(no hours pulled for this week yet)");
-  L.push("----------------------------------");
-  L.push(rpad("Total paid hours",26)+lpadx(hrs(th),9));
-  if(hasCl) L.push(rpad("Total clerical (non-pension)",26)+lpadx("$"+money(clT),9));
+  L.push("-------------------------------------------------");
+  L.push(rpad("TOTALS",22)+lpadx(hrs(tReg),7)+lpadx(hrs(tOt),7)+lpadx(hrs(tDt),7)+lpadx(hrs(tTot),8));
+  if(hasCl) L.push(rpad("Total clerical (non-pension)",22)+lpadx("$"+money(clT),29));
   L.push("");
+  if(undated.length) L.push("NOTE: No daily clock detail came through for "+undated.join(", ")+", so their hours show as regular only — please check overtime by hand.");
   if(hasCl) L.push("NOTE: Clerical pay is straight wages and is NOT pension/fringe reportable.");
   L.push("Sent from the Northern Tire payroll app.");
   return L.join("\n");
@@ -1987,19 +2013,40 @@ function renderWeekBox(){
   var box=document.getElementById("weekBox"); if(!box) return;
   var wp=S.settings.weekPull;
   if(!wp||!wp.hours){ box.innerHTML=""; return; }
-  var w=lastCompletedWeek(), stale=(wp.end!==w.end), rows="", th=0;
+  var w=lastCompletedWeek(), stale=(wp.end!==w.end);
+  /* gather the distinct dates worked, to offer holiday toggles */
+  var dateSet={};
+  if(wp.days) Object.keys(wp.days).forEach(function(eid){ var dd=wp.days[eid]||{}; Object.keys(dd).forEach(function(iso){ if((Number(dd[iso])||0)>0) dateSet[iso]=true; }); });
+  var dates=Object.keys(dateSet).sort();
+  var holHtml="";
+  if(dates.length){
+    holHtml='<div class="footnote" style="margin:8px 0 4px">Double-time days (2×): Sundays are automatic — tick any holiday worked:</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:4px">';
+    dates.forEach(function(iso){
+      var d=parseD(iso), dow=d?d.getDay():-1, nm=d?d.toLocaleDateString("en-US",{weekday:"short",month:"numeric",day:"numeric"}):iso;
+      if(dow===0) holHtml+='<span class="footnote" style="color:var(--flag)">'+esc(nm)+' · Sunday 2×</span>';
+      else { var on=!!(wp.holidays&&wp.holidays[iso]); holHtml+='<label class="footnote" style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" '+(on?"checked":"")+' onchange="onWeekHoliday(\''+iso+'\',this.checked)"> '+esc(nm)+' holiday 2×</label>'; }
+    });
+    holHtml+='</div>';
+  }
+  var rows="", tReg=0,tOt=0,tDt=0,tTot=0, anyUndated=false;
   S.employees.forEach(function(emp){
-    if(wp.hours[emp.id]==null) return;
-    var hh=Number(wp.hours[emp.id])||0; th+=hh;
-    rows+='<tr><td>'+esc(emp.name)+'</td><td class="num">'+hrs(hh)+'</td></tr>';
+    var c=classifyEmpWeek(emp.id,wp);
+    if(c.total<=0) return;
+    tReg+=c.reg;tOt+=c.ot;tDt+=c.dt;tTot+=c.total; if(!c.dated)anyUndated=true;
+    rows+='<tr><td>'+esc(emp.name)+(c.dated?'':' <span class="footnote" style="color:var(--flag)">*</span>')+'</td><td class="num">'+hrs(c.reg)+'</td><td class="num">'+hrs(c.ot)+'</td><td class="num">'+hrs(c.dt)+'</td><td class="num">'+hrs(c.total)+'</td></tr>';
   });
   box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
     +'<div><div class="eyebrow">Last week pulled · payroll</div><div class="prtsum">'+fmtD(wp.start)+' – '+fmtD(wp.end)+(stale?' <span class="pill floor">old week — re-pull</span>':'')+'</div></div>'
     +'<button class="btn" onclick="emailPayrollWeek()">Email last week to Tandem Tax</button></div>'
-    +'<table class="sumtbl mini" style="margin-top:10px"><thead><tr><th>Employee</th><th class="num">Hours</th></tr></thead><tbody>'+rows+'</tbody>'
-    +'<tfoot><tr><td>Total</td><td class="num">'+hrs(th)+'</td></tr></tfoot></table></div>';
+    +holHtml
+    +'<table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th><th class="num">Reg</th><th class="num">OT 1.5×</th><th class="num">DT 2×</th><th class="num">Total</th></tr></thead><tbody>'+rows+'</tbody>'
+    +'<tfoot><tr><td>Total</td><td class="num">'+hrs(tReg)+'</td><td class="num">'+hrs(tOt)+'</td><td class="num">'+hrs(tDt)+'</td><td class="num">'+hrs(tTot)+'</td></tr></tfoot></table>'
+    +(anyUndated?'<div class="footnote" style="margin-top:6px;color:var(--flag)">* No daily clock detail came through — shown as regular only. Re-pull, or check overtime by hand.</div>':'')
+    +'</div>';
 }
+window.onWeekHoliday=function(iso,on){ var wp=S.settings.weekPull; if(!wp)return; if(!wp.holidays)wp.holidays={}; if(on)wp.holidays[iso]=true; else delete wp.holidays[iso]; persist(); renderWeekBox(); };
 
 /* monthly pull — fills the month's 3029 hours (relabelled button) */
 window.tsPull=async function(){
