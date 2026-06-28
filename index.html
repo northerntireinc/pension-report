@@ -2048,6 +2048,23 @@ function payrollWeekBody(){
   L.push(DIV);
   L.push(prow(["TOTALS", hrs(T.reg), hrs(T.ot), hrs(T.dt), hrs(T.sick), hrs(T.vac), hrs(T.tot)]));
   L.push("");
+  /* daily clock hours from TimeStation, so Avery can verify the totals */
+  var allDays=weekAllDays(wp);
+  var anyDaily=allDays.length && S.employees.some(function(e){ var dm=(wp.days&&wp.days[e.id])||{}; return Object.keys(dm).some(function(k){ return (Number(dm[k])||0)>0; }); });
+  if(anyDaily){
+    var DW=[20]; allDays.forEach(function(){ DW.push(6); });
+    var drow=function(c){ return c.map(function(v,i){ return i===0?rpad(v,DW[0]):lpadx(v,DW[i]); }).join(" | "); };
+    var DDIV=DW.map(function(w){ return Array(w+1).join("-"); }).join("-+-");
+    L.push("DAILY HOURS (TimeStation)");
+    L.push(drow(["Employee"].concat(allDays.map(function(iso){ var d=parseD(iso); return d?d.toLocaleDateString("en-US",{weekday:"short"})+" "+d.getDate():iso; }))));
+    L.push(DDIV);
+    S.employees.forEach(function(emp){
+      var dm=(wp.days&&wp.days[emp.id])||{};
+      if(!Object.keys(dm).some(function(k){ return (Number(dm[k])||0)>0; })) return;
+      L.push(drow([emp.name].concat(allDays.map(function(iso){ var h=Number(dm[iso])||0; return h>0?hrs(h):"-"; }))));
+    });
+    L.push("");
+  }
   var notes=[];
   if(hasCl) notes.push("Clerical (straight wages, NOT pension/fringe): "+cler.join(", ")+" — total $"+money(clT));
   if(unpaid.length) notes.push("Unpaid missed days (sick & vacation used up): "+unpaid.join(", "));
