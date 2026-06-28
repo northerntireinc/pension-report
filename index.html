@@ -2164,6 +2164,42 @@ window.weekCSV=function(){
   var un=(wp.notes||"").trim(); if(un){ R.push([]); R.push(["Notes", un]); }
   dl((S.settings.employer||"NTI").replace(/[^a-z0-9]+/gi,"_")+"_payroll_"+wp.start+".csv", R.map(function(r){ return r.map(cc).join(","); }).join("\n"));
 };
+/* real HTML table — paste into the Mail body for true aligned columns on iPhone */
+function weekHTMLTable(){
+  var wp=S.settings.weekPull, d=weekData(wp), allDays=weekAllDays(wp);
+  var th='style="border:1px solid #999;padding:4px 8px;background:#eee"', td='style="border:1px solid #999;padding:4px 8px;text-align:right"', tdl='style="border:1px solid #999;padding:4px 8px;text-align:left"';
+  var H='<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#000">';
+  H+='<p><b>'+esc(S.settings.employer||"Northern Tire")+' — Weekly Payroll</b><br>'+esc(fmtD(wp.start)+' to '+fmtD(wp.end))+' (paid the following Friday)<br>For Tandem Tax (Avery)</p>';
+  H+='<p style="margin:8px 0 2px"><b>Hours by type</b></p><table style="border-collapse:collapse">';
+  H+='<tr><th '+tdl.replace("text-align:left","text-align:left;background:#eee")+'>Type</th>'+d.emps.map(function(e){ return '<th '+th+'>'+esc(e.full)+'</th>'; }).join("")+'</tr>';
+  [["Reg","reg"],["OT 1.5x","ot"],["DT 2x","dt"],["Sick","sick"],["Vac","vac"],["TOTAL","tot"]].forEach(function(rw){
+    H+='<tr><td '+tdl+'><b>'+rw[0]+'</b></td>'+d.emps.map(function(e){ return '<td '+td+'>'+hrs(e[rw[1]])+'</td>'; }).join("")+'</tr>';
+  });
+  H+='</table>';
+  H+='<p style="margin:10px 0 2px"><b>Daily hours (TimeStation)</b></p><table style="border-collapse:collapse">';
+  H+='<tr><th '+tdl.replace("text-align:left","text-align:left;background:#eee")+'>Employee</th>'+allDays.map(function(iso){ var x=parseD(iso); return '<th '+th+'>'+esc(x?x.toLocaleDateString("en-US",{weekday:"short"})+" "+x.getDate():iso)+'</th>'; }).join("")+'</tr>';
+  d.emps.forEach(function(e){ var dm=(wp.days&&wp.days[e.id])||{}; H+='<tr><td '+tdl+'>'+esc(e.full)+'</td>'+allDays.map(function(iso){ var h=Number(dm[iso])||0; return '<td '+td+'>'+(h>0?hrs(h):"-")+'</td>'; }).join("")+'</tr>'; });
+  H+='</table>';
+  var nn=[];
+  if(d.hasCl) nn.push("Clerical (non-pension): "+d.emps.filter(function(e){return e.cl>0;}).map(function(e){return e.full+" $"+money(e.cl);}).join(", ")+"; total $"+money(d.T.cl));
+  if(d.unpaid.length) nn.push("Unpaid (sick + vacation used up): "+d.unpaid.join(", "));
+  if(d.undated.length) nn.push("No daily detail: "+d.undated.join(", ")+" (regular only — verify OT).");
+  var un=(wp.notes||"").trim(); if(un) nn.push(un);
+  H+='<p style="margin:10px 0 2px"><b>Notes</b><br>'+(nn.length?nn.map(esc).join("<br>"):"(none)")+'</p></div>';
+  return H;
+}
+window.weekCopyTable=async function(){
+  var wp=S.settings.weekPull; if(!wp||!wp.hours){ alert("Pull last week first (Shop Report tab)."); gotoTab("report"); return; }
+  var html=weekHTMLTable(), text=payrollWeekBody();
+  try{
+    if(navigator.clipboard && window.ClipboardItem){
+      await navigator.clipboard.write([new ClipboardItem({ "text/html":new Blob([html],{type:"text/html"}), "text/plain":new Blob([text],{type:"text/plain"}) })]);
+      alert("Aligned table copied.\n\nNow tap “Email last week,” tap inside the email body, and Paste — the table drops in with columns lined up.");
+    } else {
+      await navigator.clipboard.writeText(text); alert("Copied as text (this browser can’t copy a formatted table).");
+    }
+  }catch(e){ alert("Couldn’t copy: "+(e.message||e)); }
+};
 window.emailPayrollWeek=function(){
   var wp=S.settings.weekPull;
   if(!wp||!wp.hours){ alert("Pull last week first (Shop Report tab)."); gotoTab("report"); return; }
@@ -2225,7 +2261,7 @@ function renderWeekBox(){
   box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
     +'<div><div class="eyebrow">Last week pulled · payroll</div><div class="prtsum">'+fmtD(wp.start)+' – '+fmtD(wp.end)+(stale?' <span class="pill floor">old week — re-pull</span>':'')+'</div></div>'
-    +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" onclick="weekCSV()">Download (Excel)</button><button class="btn" onclick="emailPayrollWeek()">Email last week to Tandem Tax</button></div></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn brass" onclick="weekCopyTable()">Copy aligned table</button><button class="btn" onclick="emailPayrollWeek()">Email last week</button><button class="btn ghost sm" onclick="weekCSV()">CSV</button></div></div>'
     +holHtml
     +'<table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th><th class="num">Reg</th><th class="num">OT 1.5×</th><th class="num">DT 2×</th><th class="num">Sick</th><th class="num">Vac</th><th class="num">Total</th></tr></thead><tbody>'+rows+'</tbody>'
     +'<tfoot><tr><td>Total</td><td class="num">'+hrs(T.reg)+'</td><td class="num">'+hrs(T.ot)+'</td><td class="num">'+hrs(T.dt)+'</td><td class="num">'+hrs(T.sick)+'</td><td class="num">'+hrs(T.vac)+'</td><td class="num">'+hrs(T.tot)+'</td></tr></tfoot></table>'
