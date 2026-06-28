@@ -1982,6 +1982,11 @@ function weekWorkdays(wp){
   for(var i=0;i<7;i++){ var dd=new Date(d.getFullYear(),d.getMonth(),d.getDate()+i), dow=dd.getDay(); if(dow>=1&&dow<=5) out.push(isoD(dd)); }
   return out;
 }
+function weekAllDays(wp){
+  var out=[], d=parseD(wp.start); if(!d) return out;
+  for(var i=0;i<7;i++){ var dd=new Date(d.getFullYear(),d.getMonth(),d.getDate()+i); out.push(isoD(dd)); }
+  return out;
+}
 function missedWorkdays(emp,wp){
   var dm=(wp&&wp.days&&wp.days[emp.id])||{}, miss=[];
   weekWorkdays(wp).forEach(function(iso){
@@ -2091,6 +2096,16 @@ function renderWeekBox(){
       +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.sickDays!=null?emp.sickDays:"")+'" onchange="onLeaveBal(\''+emp.id+'\',\'sickDays\',this.value)" style="width:72px;text-align:right"></td>'
       +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.vacDays!=null?emp.vacDays:"")+'" onchange="onLeaveBal(\''+emp.id+'\',\'vacDays\',this.value)" style="width:72px;text-align:right"></td></tr>';
   }).join("");
+  /* per-day clock detail so the numbers can be eyeballed against TimeStation */
+  var allDays=weekAllDays(wp);
+  var dHead=allDays.map(function(iso){ var dd=parseD(iso), lbl=dd?dd.toLocaleDateString("en-US",{weekday:"short",day:"numeric"}):iso, sun=dd&&dd.getDay()===0; return '<th class="num"'+(sun?' style="color:var(--flag)"':'')+'>'+esc(lbl)+'</th>'; }).join("");
+  var dBody=S.employees.map(function(emp){
+    var dm=(wp.days&&wp.days[emp.id])||{};
+    if(!Object.keys(dm).some(function(k){return (Number(dm[k])||0)>0;})) return "";
+    var cells=allDays.map(function(iso){ var h=Number(dm[iso])||0, dd=parseD(iso), prem=(dd&&dd.getDay()===0)||(wp.holidays&&wp.holidays[iso]); return '<td class="num"'+(prem&&h>0?' style="color:var(--flag)"':'')+'>'+(h>0?hrs(h):'·')+'</td>'; }).join("");
+    return '<tr><td>'+esc(emp.name)+'</td>'+cells+'</tr>';
+  }).join("");
+  var dailyHtml=dBody?('<details style="margin-top:10px" open><summary class="eyebrow" style="cursor:pointer">Daily clock detail (from TimeStation)</summary><div style="overflow-x:auto"><table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th>'+dHead+'</tr></thead><tbody>'+dBody+'</tbody></table></div><p class="footnote" style="margin:6px 0 0">Hours clocked each day. Red = Sunday/holiday (2×). “·” = no clock-in that day.</p></details>'):'';
   box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
     +'<div><div class="eyebrow">Last week pulled · payroll</div><div class="prtsum">'+fmtD(wp.start)+' – '+fmtD(wp.end)+(stale?' <span class="pill floor">old week — re-pull</span>':'')+'</div></div>'
