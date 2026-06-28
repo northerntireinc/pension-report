@@ -1919,7 +1919,7 @@ window.lastCompletedWeek=function(){
 };
 function setWeekBtnLabel(){
   var b=document.getElementById("btnPullWeek"); if(!b) return;
-  var w=lastCompletedWeek(); b.textContent="Pull last week: "+fmtD(w.start)+"–"+fmtD(w.end);
+  var w=lastCompletedWeek(); b.textContent="1. Pull last week: "+fmtD(w.start)+"–"+fmtD(w.end);
 }
 
 /* weekly pull — payroll only; does NOT touch the month's 3029 hours */
@@ -2213,8 +2213,14 @@ window.emailPayrollWeek=async function(){
 function renderWeekBox(){
   var box=document.getElementById("weekBox"); if(!box) return;
   var wp=S.settings.weekPull;
-  if(!wp||!wp.hours){ box.innerHTML=""; return; }
-  var w=lastCompletedWeek(), stale=(wp.end!==w.end);
+  var w=lastCompletedWeek();
+  var stack='<div style="display:flex;flex-direction:column;gap:8px;max-width:340px;margin-bottom:10px">'
+    +'<button id="btnPullWeek" class="btn brass" onclick="tsPullWeek()">1. Pull last week: '+fmtD(w.start)+'–'+fmtD(w.end)+'</button>'
+    +'<button class="btn" onclick="weekCopyTable()">2. Copy table</button>'
+    +'<button class="btn" onclick="emailPayrollWeek()">3. Email to Avery</button>'
+    +'</div>';
+  if(!wp||!wp.hours){ box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'+stack+'<div class="footnote">Tap <b>1</b> to pull last week’s hours, then <b>2</b> Copy table and <b>3</b> Email to Avery.</div></div>'; return; }
+  var stale=(wp.end!==w.end);
   /* gather the distinct dates worked, to offer holiday toggles */
   var dateSet={};
   if(wp.days) Object.keys(wp.days).forEach(function(eid){ var dd=wp.days[eid]||{}; Object.keys(dd).forEach(function(iso){ if((Number(dd[iso])||0)>0) dateSet[iso]=true; }); });
@@ -2260,9 +2266,8 @@ function renderWeekBox(){
   }).join("");
   var dailyHtml=dBody?('<details style="margin-top:10px" open><summary class="eyebrow" style="cursor:pointer">Daily clock detail (from TimeStation)</summary><div style="overflow-x:auto"><table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th>'+dHead+'</tr></thead><tbody>'+dBody+'</tbody></table></div><p class="footnote" style="margin:6px 0 0">Hours clocked each day. Red = Sunday/holiday (2×). “·” = no clock-in that day.</p></details>'):'';
   box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
-    +'<div><div class="eyebrow">Last week pulled · payroll</div><div class="prtsum">'+fmtD(wp.start)+' – '+fmtD(wp.end)+(stale?' <span class="pill floor">old week — re-pull</span>':'')+'</div></div>'
-    +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn brass" onclick="weekCopyTable()">1. Copy table</button><button class="btn" onclick="emailPayrollWeek()">2. Email to Avery</button></div></div>'
+    +stack
+    +'<div class="prtsum" style="margin-bottom:6px">Pulled: '+fmtD(wp.start)+' – '+fmtD(wp.end)+(stale?' <span class="pill floor">older than last week — tap 1 to re-pull</span>':'')+'</div>'
     +holHtml
     +'<table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th><th class="num">Reg</th><th class="num">OT 1.5×</th><th class="num">DT 2×</th><th class="num">Sick</th><th class="num">Vac</th><th class="num">Total</th></tr></thead><tbody>'+rows+'</tbody>'
     +'<tfoot><tr><td>Total</td><td class="num">'+hrs(T.reg)+'</td><td class="num">'+hrs(T.ot)+'</td><td class="num">'+hrs(T.dt)+'</td><td class="num">'+hrs(T.sick)+'</td><td class="num">'+hrs(T.vac)+'</td><td class="num">'+hrs(T.tot)+'</td></tr></tfoot></table>'
@@ -2417,14 +2422,11 @@ window.recordFiling=function(kind){
 /* 4 — inject the new buttons + containers into the page */
 function injectDom(){
   var row=document.getElementById("importRow");
-  if(row && !document.getElementById("btnPullWeek")){
+  if(row){
     var monthly=row.querySelector('button[onclick="tsPull()"]');
-    var wk=document.createElement("button");
-    wk.className="btn brass sm"; wk.id="btnPullWeek"; wk.setAttribute("onclick","tsPullWeek()"); wk.textContent="Pull last week";
-    row.insertBefore(wk,row.firstChild);
     if(monthly){ monthly.className="btn ghost sm"; monthly.textContent="Pull month for 3029"; }
     var help=row.querySelector("span.footnote");
-    if(help) help.innerHTML="<b>Pull last week</b> = the most recently finished Sun&ndash;Sat week, for the Tandem Tax payroll email (it doesn’t touch the month’s 3029 hours). <b>Pull month for 3029</b> fills the monthly fringe report. Or import the Time Clock CSV.";
+    if(help) help.innerHTML="For the weekly Tandem Tax payroll, use the numbered buttons below (<b>1 Pull</b>, <b>2 Copy</b>, <b>3 Email</b>). <b>Pull month for 3029</b> fills the monthly fringe report. Or import the Time Clock CSV.";
   }
   if(!document.getElementById("weekBox")){
     var ma=document.getElementById("mapArea");
