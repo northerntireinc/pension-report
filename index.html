@@ -2261,7 +2261,7 @@ function renderWeekBox(){
   box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
     +'<div><div class="eyebrow">Last week pulled · payroll</div><div class="prtsum">'+fmtD(wp.start)+' – '+fmtD(wp.end)+(stale?' <span class="pill floor">old week — re-pull</span>':'')+'</div></div>'
-    +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn brass" onclick="weekCopyTable()">Copy aligned table</button><button class="btn" onclick="emailPayrollWeek()">Email last week</button><button class="btn ghost sm" onclick="weekCSV()">CSV</button></div></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn brass" onclick="weekCopyTable()">Copy aligned table</button><button class="btn" onclick="emailPayrollWeek()">Email last week to Avery</button></div></div>'
     +holHtml
     +'<table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th><th class="num">Reg</th><th class="num">OT 1.5×</th><th class="num">DT 2×</th><th class="num">Sick</th><th class="num">Vac</th><th class="num">Total</th></tr></thead><tbody>'+rows+'</tbody>'
     +'<tfoot><tr><td>Total</td><td class="num">'+hrs(T.reg)+'</td><td class="num">'+hrs(T.ot)+'</td><td class="num">'+hrs(T.dt)+'</td><td class="num">'+hrs(T.sick)+'</td><td class="num">'+hrs(T.vac)+'</td><td class="num">'+hrs(T.tot)+'</td></tr></tfoot></table>'
