@@ -1982,6 +1982,11 @@ function weekWorkdays(wp){
   for(var i=0;i<7;i++){ var dd=new Date(d.getFullYear(),d.getMonth(),d.getDate()+i), dow=dd.getDay(); if(dow>=1&&dow<=5) out.push(isoD(dd)); }
   return out;
 }
+function weekAllDays(wp){
+  var out=[], d=parseD(wp.start); if(!d) return out;
+  for(var i=0;i<7;i++){ var dd=new Date(d.getFullYear(),d.getMonth(),d.getDate()+i); out.push(isoD(dd)); }
+  return out;
+}
 function missedWorkdays(emp,wp){
   var dm=(wp&&wp.days&&wp.days[emp.id])||{}, miss=[];
   weekWorkdays(wp).forEach(function(iso){
@@ -2018,33 +2023,60 @@ window.applyLeaveToBalances=function(){
 };
 function payrollWeekBody(){
   var s=S.settings, wp=s.weekPull||{hours:{}}, L=[];
+  var W=[22,6,6,6,6,6,7];
+  function prow(c){ return c.map(function(v,i){ return i===0?rpad(v,W[0]):lpadx(v,W[i]); }).join(" | "); }
+  var DIV=W.map(function(w){ return Array(w+1).join("-"); }).join("-+-");
   L.push(s.employer+" — Weekly Payroll");
-  L.push("Week: "+fmtFull(wp.start)+" – "+fmtFull(wp.end)+" (paid the following Friday)");
-  L.push("Prepared for Tandem Tax (Avery)","");
-  L.push("Reg to 8/day · OT 1.5x over 8/day · DT 2x over 12/day & Sun/holidays · Sick/Vac = straight time (auto-filled for missed Mon-Fri days, sick first then vacation).","");
-  L.push(rpad("Employee",20)+lpadx("Reg",6)+lpadx("OT",6)+lpadx("DT",6)+lpadx("Sick",6)+lpadx("Vac",6)+lpadx("Total",7));
-  L.push("------------------------------------------------------------");
-  var T={reg:0,ot:0,dt:0,sick:0,vac:0,tot:0}, n=0, clT=0, hasCl=false, undated=[], unpaid=[];
+  L.push(fmtFull(wp.start)+" – "+fmtFull(wp.end)+"   (paid the following Friday)");
+  L.push("Prepared for Tandem Tax (Avery)");
+  L.push("");
+  L.push(prow(["Employee","Reg","OT","DT","Sick","Vac","Total"]));
+  L.push(DIV);
+  var T={reg:0,ot:0,dt:0,sick:0,vac:0,tot:0}, n=0, clT=0, hasCl=false, undated=[], unpaid=[], cler=[];
   S.employees.forEach(function(emp){
     var c=classifyEmpWeek(emp.id,wp), a=leaveAllocFor(emp,wp), cl=Number(emp.clericalWeekly)||0;
     var tot=c.total+a.sickH+a.vacH;
     if(tot<=0 && cl<=0) return;
     n++; T.reg+=c.reg;T.ot+=c.ot;T.dt+=c.dt;T.sick+=a.sickH;T.vac+=a.vacH;T.tot+=tot;
     if(c.total>0 && !c.dated) undated.push(lastName(emp.name));
-    if(a.unpaidD>0) unpaid.push(lastName(emp.name)+" ("+a.unpaidD+")");
+    if(a.unpaidD>0) unpaid.push(lastName(emp.name)+" ("+a.unpaidD+" day"+(a.unpaidD>1?"s":"")+")");
+    if(cl>0){ hasCl=true; clT+=cl; cler.push(lastName(emp.name)+" $"+money(cl)); }
     var tag=((emp.coverage||"union")==="mgmt")?" (mgmt)":"";
-    L.push(rpad(emp.name+tag,20)+lpadx(hrs(c.reg),6)+lpadx(hrs(c.ot),6)+lpadx(hrs(c.dt),6)+lpadx(hrs(a.sickH),6)+lpadx(hrs(a.vacH),6)+lpadx(hrs(tot),7));
-    if(cl>0){ hasCl=true; clT+=cl; L.push(rpad("   + clerical (non-pension)",20)+lpadx("+$"+money(cl),37)); }
+    L.push(prow([emp.name+tag, hrs(c.reg), hrs(c.ot), hrs(c.dt), hrs(a.sickH), hrs(a.vacH), hrs(tot)]));
   });
   if(!n) L.push("(no hours pulled for this week yet)");
-  L.push("------------------------------------------------------------");
-  L.push(rpad("TOTALS",20)+lpadx(hrs(T.reg),6)+lpadx(hrs(T.ot),6)+lpadx(hrs(T.dt),6)+lpadx(hrs(T.sick),6)+lpadx(hrs(T.vac),6)+lpadx(hrs(T.tot),7));
-  if(hasCl) L.push(rpad("Total clerical (non-pension)",20)+lpadx("$"+money(clT),43));
+  L.push(DIV);
+  L.push(prow(["TOTALS", hrs(T.reg), hrs(T.ot), hrs(T.dt), hrs(T.sick), hrs(T.vac), hrs(T.tot)]));
   L.push("");
-  if(unpaid.length) L.push("UNPAID missed days (sick+vacation used up): "+unpaid.join(", ")+" — number = unpaid days.");
-  if(undated.length) L.push("NOTE: No daily clock detail for "+undated.join(", ")+"; shown as regular only and no auto sick/vacation applied — check by hand.");
-  if(hasCl) L.push("NOTE: Clerical pay is straight wages and is NOT pension/fringe reportable.");
-  L.push("Sent from the Northern Tire payroll app.");
+  /* daily clock hours from TimeStation, so Avery can verify the totals */
+  var allDays=weekAllDays(wp);
+  var anyDaily=allDays.length && S.employees.some(function(e){ var dm=(wp.days&&wp.days[e.id])||{}; return Object.keys(dm).some(function(k){ return (Number(dm[k])||0)>0; }); });
+  if(anyDaily){
+    var DW=[20]; allDays.forEach(function(){ DW.push(6); });
+    var drow=function(c){ return c.map(function(v,i){ return i===0?rpad(v,DW[0]):lpadx(v,DW[i]); }).join(" | "); };
+    var DDIV=DW.map(function(w){ return Array(w+1).join("-"); }).join("-+-");
+    L.push("DAILY HOURS (TimeStation)");
+    L.push(drow(["Employee"].concat(allDays.map(function(iso){ var d=parseD(iso); return d?d.toLocaleDateString("en-US",{weekday:"short"})+" "+d.getDate():iso; }))));
+    L.push(DDIV);
+    S.employees.forEach(function(emp){
+      var dm=(wp.days&&wp.days[emp.id])||{};
+      if(!Object.keys(dm).some(function(k){ return (Number(dm[k])||0)>0; })) return;
+      L.push(drow([emp.name].concat(allDays.map(function(iso){ var h=Number(dm[iso])||0; return h>0?hrs(h):"-"; }))));
+    });
+    L.push("");
+  }
+  var notes=[];
+  if(hasCl) notes.push("Clerical (straight wages, NOT pension/fringe): "+cler.join(", ")+" — total $"+money(clT));
+  if(unpaid.length) notes.push("Unpaid missed days (sick & vacation used up): "+unpaid.join(", "));
+  if(undated.length) notes.push("No daily detail for "+undated.join(", ")+" — shown as regular only; verify overtime.");
+  if(notes.length){ L.push("NOTES"); notes.forEach(function(x){ L.push("  - "+x); }); L.push(""); }
+  var boxW=58, inner=boxW-4, bar="+"+Array(boxW-1).join("-")+"+";
+  L.push("ADDITIONAL NOTES");
+  L.push(bar);
+  var un=(wp.notes||"").trim();
+  if(un){ un.split(/\n/).forEach(function(ln){ do{ L.push("| "+rpad(ln.slice(0,inner),inner)+" |"); ln=ln.slice(inner); }while(ln.length); }); }
+  else { L.push("| "+rpad("",inner)+" |"); L.push("| "+rpad("",inner)+" |"); }
+  L.push(bar);
   return L.join("\n");
 }
 window.emailPayrollWeek=function(){
@@ -2091,6 +2123,16 @@ function renderWeekBox(){
       +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.sickDays!=null?emp.sickDays:"")+'" onchange="onLeaveBal(\''+emp.id+'\',\'sickDays\',this.value)" style="width:72px;text-align:right"></td>'
       +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.vacDays!=null?emp.vacDays:"")+'" onchange="onLeaveBal(\''+emp.id+'\',\'vacDays\',this.value)" style="width:72px;text-align:right"></td></tr>';
   }).join("");
+  /* per-day clock detail so the numbers can be eyeballed against TimeStation */
+  var allDays=weekAllDays(wp);
+  var dHead=allDays.map(function(iso){ var dd=parseD(iso), lbl=dd?dd.toLocaleDateString("en-US",{weekday:"short",day:"numeric"}):iso, sun=dd&&dd.getDay()===0; return '<th class="num"'+(sun?' style="color:var(--flag)"':'')+'>'+esc(lbl)+'</th>'; }).join("");
+  var dBody=S.employees.map(function(emp){
+    var dm=(wp.days&&wp.days[emp.id])||{};
+    if(!Object.keys(dm).some(function(k){return (Number(dm[k])||0)>0;})) return "";
+    var cells=allDays.map(function(iso){ var h=Number(dm[iso])||0, dd=parseD(iso), prem=(dd&&dd.getDay()===0)||(wp.holidays&&wp.holidays[iso]); return '<td class="num"'+(prem&&h>0?' style="color:var(--flag)"':'')+'>'+(h>0?hrs(h):'·')+'</td>'; }).join("");
+    return '<tr><td>'+esc(emp.name)+'</td>'+cells+'</tr>';
+  }).join("");
+  var dailyHtml=dBody?('<details style="margin-top:10px" open><summary class="eyebrow" style="cursor:pointer">Daily clock detail (from TimeStation)</summary><div style="overflow-x:auto"><table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th>'+dHead+'</tr></thead><tbody>'+dBody+'</tbody></table></div><p class="footnote" style="margin:6px 0 0">Hours clocked each day. Red = Sunday/holiday (2×). “·” = no clock-in that day.</p></details>'):'';
   box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
     +'<div><div class="eyebrow">Last week pulled · payroll</div><div class="prtsum">'+fmtD(wp.start)+' – '+fmtD(wp.end)+(stale?' <span class="pill floor">old week — re-pull</span>':'')+'</div></div>'
@@ -2100,6 +2142,8 @@ function renderWeekBox(){
     +'<tfoot><tr><td>Total</td><td class="num">'+hrs(T.reg)+'</td><td class="num">'+hrs(T.ot)+'</td><td class="num">'+hrs(T.dt)+'</td><td class="num">'+hrs(T.sick)+'</td><td class="num">'+hrs(T.vac)+'</td><td class="num">'+hrs(T.tot)+'</td></tr></tfoot></table>'
     +(anyUndated?'<div class="footnote" style="margin-top:6px;color:var(--flag)">* No daily clock detail — shown as regular only; no auto sick/vacation applied. Re-pull or check by hand.</div>':'')
     +(anyUnpaid?'<div class="footnote" style="margin-top:4px;color:var(--flag)">Some missed days are unpaid — sick and vacation balances are used up.</div>':'')
+    +dailyHtml
+    +'<div style="margin-top:10px"><div class="eyebrow" style="margin-bottom:4px">Additional notes for Tandem Tax</div><textarea id="weekNotes" rows="2" oninput="onWeekNotes(this.value)" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:8px" placeholder="Anything Avery should know this week — appears in the email.">'+esc(wp.notes||"")+'</textarea></div>'
     +'<details style="margin-top:10px"'+(wp.applied?'':' open')+'><summary class="eyebrow" style="cursor:pointer">Leave balances (days remaining) — sick used first, then vacation</summary>'
     +'<table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th><th class="num">Sick days</th><th class="num">Vac days</th></tr></thead><tbody>'+balRows+'</tbody></table>'
     +'<div class="btnrow" style="margin-top:8px">'+(wp.applied?'<span class="footnote" style="color:var(--good)">✓ This week was subtracted from balances.</span>':'<button class="btn brass sm" onclick="applyLeaveToBalances()">Subtract this week\'s sick/vacation from balances</button>')+'</div>'
@@ -2108,6 +2152,7 @@ function renderWeekBox(){
     +'</div>';
 }
 window.onWeekHoliday=function(iso,on){ var wp=S.settings.weekPull; if(!wp)return; if(!wp.holidays)wp.holidays={}; if(on)wp.holidays[iso]=true; else delete wp.holidays[iso]; persist(); renderWeekBox(); };
+window.onWeekNotes=function(v){ var wp=S.settings.weekPull; if(!wp)return; wp.notes=v; persist(); };
 
 /* monthly pull — fills the month's 3029 hours (relabelled button) */
 window.tsPull=async function(){
