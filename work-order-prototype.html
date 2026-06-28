@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTI Work Orders — QuickBooks (design prototype)</title>
+<!--
+  DESIGN PROTOTYPE / STYLE TARGET for the "nti work orders" app.
+  - Visual language matches the pension app (ink / paper / brass shell, cards, tabs).
+  - Entry experience is styled to feel like QuickBooks Online (green save, line-item grid,
+    balance box, customer at top).
+  - Sequenced step ribbon, start -> finish:
+        Step 1  Create Work Order ........ GREEN
+        Step 2  Open Work Orders .......... ORANGE
+        Step 3  Create Invoice (-> QBO) ... BLUE OUTLINE + RED accent
+  - Field names mirror the real Supabase schema (work_orders table) so this ports 1:1:
+        id, date, customer, lines[jsonb], status, invoice_no, notes,
+        created_at, email_sent, technician, invoiced_by
+  - Runs on localStorage demo data only. NO live Supabase / QBO calls happen here;
+    the spots where the real app calls them are marked with  // WIRE:  comments.
+-->
+<style>
+  :root{
+    /* shared pension-app shell */
+    --ink:#15212e;--ink-2:#22323f;--paper:#f6f4ee;--card:#fff;
+    --line:#d8d2c4;--line-2:#e8e3d7;--muted:#6b7480;
+    --brass:#b07a26;--brass-soft:#f2e6cf;
+    --radius:10px;--shadow:0 1px 2px rgba(21,33,46,.06),0 8px 24px rgba(21,33,46,.06);
+
+    /* traffic-light step colors (start -> finish) */
+    --go:#1f8a3b;            /* GREEN  - create work order */
+    --go-soft:#e4f4e8;--go-line:#a8d8b6;
+    --wip:#c4791a;           /* ORANGE - open work order  */
+    --wip-soft:#fbeed8;--wip-line:#e7c389;
+    --inv:#2c5b8a;           /* BLUE   - create invoice    */
+    --inv-soft:#e6eef6;--inv-line:#a9c4de;
+    --red:#a8341f;           /* RED    - invoice accent     */
+
+    /* QuickBooks Online cue */
+    --qb:#2ca01c;--qb-dark:#108000;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--paper);color:var(--ink);-webkit-text-size-adjust:100%;line-height:1.45}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+  .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:700;color:var(--muted)}
+
+  header{background:var(--ink);color:#fff;padding:14px 18px;position:sticky;top:0;z-index:30;border-bottom:3px solid var(--brass)}
+  header .wrap{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;letter-spacing:.02em;font-weight:700}
+  header .sub{font-size:11px;color:#9fb0c0;text-transform:uppercase;letter-spacing:.14em;margin-top:2px}
+
+  .qbchip{display:inline-flex;align-items:center;gap:7px;background:var(--ink-2);border:1px solid #3a4a58;border-radius:999px;padding:6px 12px;font-size:12px;color:#cdd9e3}
+  .qbchip .dot{width:8px;height:8px;border-radius:50%;background:var(--qb);box-shadow:0 0 0 3px rgba(44,160,28,.25)}
+  .qbchip.off .dot{background:#7a8794;box-shadow:none}
+  .qbchip b{color:#fff;font-weight:700}
+
+  main{max-width:1080px;margin:0 auto;padding:0 18px 70px}
+
+  /* ===== step ribbon ===== */
+  .ribbon{max-width:1080px;margin:18px auto 6px;padding:0 18px}
+  .steps{display:flex;gap:10px;align-items:stretch}
+  .step{flex:1;position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 15px 13px 16px;cursor:pointer;box-shadow:var(--shadow);overflow:hidden;text-align:left;
+    transition:transform .08s ease,box-shadow .12s ease}
+  .step:hover{transform:translateY(-1px)}
+  .step:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c,#ccc)}
+  .step .n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;
+    font-size:12px;font-weight:800;color:#fff;background:var(--c,#999);margin-bottom:8px}
+  .step .t{font-size:14px;font-weight:700;letter-spacing:.01em}
+  .step .d{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.35}
+  .step .cnt{position:absolute;top:12px;right:13px;font-size:11px;font-weight:800;color:var(--c);background:var(--cs,#f0f0f0);
+    border:1px solid var(--cl,#ddd);border-radius:999px;padding:2px 9px}
+  .step.active{box-shadow:0 0 0 2px var(--c) inset,var(--shadow)}
+  .step.active .d{color:var(--ink)}
+  /* per-step color binding */
+  .step.s1{--c:var(--go);--cs:var(--go-soft);--cl:var(--go-line)}
+  .step.s2{--c:var(--wip);--cs:var(--wip-soft);--cl:var(--wip-line)}
+  .step.s3{--c:var(--inv);--cs:var(--inv-soft);--cl:var(--inv-line)}
+  .step.s3 .n{background:linear-gradient(135deg,var(--inv) 60%,var(--red))}
+  .connect{align-self:center;color:var(--muted);font-size:18px;flex:0 0 auto}
+
+  /* ===== panels ===== */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin-top:12px}
+  .panel.hidden{display:none}
+  .panelhead{display:flex;align-items:center;gap:10px;margin:0 0 4px}
+  .panelhead .tag{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fff;border-radius:999px;padding:3px 9px}
+  .panel.p1 .panelhead .tag{background:var(--go)}
+  .panel.p2 .panelhead .tag{background:var(--wip)}
+  .panel.p3 .panelhead .tag{background:var(--inv)}
+  .panel h2{font-size:16px;margin:0}
+  .panel .hint{font-size:13px;color:var(--muted);margin:6px 0 18px;max-width:66ch}
+
+  .grid{display:grid;gap:14px}
+  .grid.two{grid-template-columns:1fr 1fr}
+  .grid.three{grid-template-columns:1.3fr 1fr 1fr}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+  input[type=text],input[type=number],input[type=date],select,textarea{border:1px solid var(--line);border-radius:8px;
+    padding:10px 11px;font-size:15px;font-family:inherit;background:#fff;color:var(--ink);width:100%}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--qb);outline-offset:0;border-color:var(--qb)}
+  textarea{min-height:64px;resize:vertical}
+
+  .section-div{height:1px;background:var(--line-2);margin:20px 0}
+  .subhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 8px}
+  .subhead .lab{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink)}
+
+  /* ===== QuickBooks-style line item grid ===== */
+  .litable{width:100%;border-collapse:collapse;font-size:14px}
+  .litable thead th{background:#f0fbef;color:#246b18;text-align:left;padding:9px 10px;font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.07em;border-bottom:2px solid var(--qb);white-space:nowrap}
+  .litable thead th.r{text-align:right}
+  .litable tbody td{padding:6px 8px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+  .litable tbody tr:hover{background:#fbfdfa}
+  .litable .rownum{color:var(--muted);font-size:12px;width:26px;text-align:center}
+  .litable input{border:1px solid transparent;border-radius:6px;padding:8px 8px;font-size:14px;width:100%;background:transparent}
+  .litable input:hover{border-color:var(--line)}
+  .litable input:focus{border-color:var(--qb);background:#fff;outline:none}
+  .litable td.r input{text-align:right;font-variant-numeric:tabular-nums}
+  .litable .amt{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;padding-right:10px;white-space:nowrap}
+  .litable .del{color:var(--red);cursor:pointer;font-weight:800;border:none;background:none;font-size:16px;line-height:1;padding:4px 8px;border-radius:6px}
+  .litable .del:hover{background:var(--inv-soft)}
+  .colqty{width:90px}.colrate{width:120px}.colamt{width:120px}.coldel{width:40px}
+  .liadd{display:flex;gap:16px;margin-top:10px}
+  .liadd button{background:none;border:none;color:var(--qb-dark);font-weight:700;font-size:13px;cursor:pointer;padding:6px 0;font-family:inherit}
+  .liadd button:hover{text-decoration:underline}
+
+  .totals{display:flex;justify-content:flex-end;margin-top:16px}
+  .totbox{min-width:280px}
+  .totrow{display:flex;justify-content:space-between;padding:7px 2px;font-size:14px}
+  .totrow.grand{border-top:2px solid var(--ink);margin-top:4px;padding-top:11px;font-size:18px;font-weight:800}
+  .totrow.grand .v{color:var(--qb-dark)}
+
+  /* ===== buttons ===== */
+  .btn{border:1px solid var(--ink);background:var(--ink);color:#fff;padding:11px 17px;border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:#fff;color:var(--ink)}
+  .btn.sm{padding:8px 13px;font-size:13px}
+  .btn.go{background:var(--go);border-color:var(--go)}                 /* GREEN: create work order */
+  .btn.qb{background:var(--qb);border-color:var(--qb-dark)}            /* QuickBooks green save     */
+  .btn.wip{background:var(--wip);border-color:var(--wip)}              /* ORANGE                    */
+  .btn.invoice{background:#fff;color:var(--inv);border:2px solid var(--inv);box-shadow:inset 0 0 0 0 var(--red)} /* BLUE OUTLINE */
+  .btn.invoice .rd{color:var(--red)}                                  /* + RED accent              */
+  .btn.invoice:hover{background:var(--inv-soft)}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
+  .spacer{flex:1}
+
+  /* ===== open work order cards ===== */
+  .wo-card{border:1px solid var(--line);border-left:5px solid var(--wip);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;background:#fff;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .wo-card.invoiced{border-left-color:var(--inv)}
+  .wo-card .who{flex:1;min-width:160px}
+  .wo-card .who .nm{font-weight:700;font-size:15px}
+  .wo-card .who .meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .wo-card .amt{font-variant-numeric:tabular-nums;font-weight:800;font-size:16px}
+  .pill{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:3px 9px;border-radius:999px;vertical-align:middle}
+  .pill.open{background:var(--wip-soft);color:var(--wip)}
+  .pill.invoiced{background:var(--inv-soft);color:var(--inv)}
+  .empty{padding:34px 16px;text-align:center;color:var(--muted);font-size:14px}
+
+  /* ===== invoice / QBO panel ===== */
+  .invsummary{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:18px}
+  .invsummary .sh{background:var(--inv-soft);border-bottom:1px solid var(--inv-line);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .invsummary .sh .nm{font-weight:800;font-size:15px;color:var(--inv)}
+  .invsummary table{width:100%;border-collapse:collapse;font-size:13px}
+  .invsummary td{padding:8px 16px;border-bottom:1px solid var(--line-2)}
+  .invsummary td.r{text-align:right;font-variant-numeric:tabular-nums}
+  .invsummary tr:last-child td{border-bottom:none}
+  .qbo-callout{border:2px solid var(--inv);border-radius:var(--radius);padding:16px;background:#fbfdff}
+  .qbo-callout .red{color:var(--red);font-weight:800}
+  .kv{font-size:13px;display:flex;flex-wrap:wrap;gap:6px 28px;margin-bottom:6px;color:var(--muted)}
+  .kv b{color:var(--ink);font-weight:700}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+    padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.go{background:var(--go)}.toast.inv{background:var(--inv)}
+
+  .demonote{max-width:1080px;margin:14px auto 0;padding:10px 18px;font-size:11.5px;color:var(--muted)}
+  .demonote b{color:var(--brass)}
+
+  @media (max-width:760px){
+    .steps{flex-direction:column}.connect{transform:rotate(90deg)}
+    .grid.two,.grid.three{grid-template-columns:1fr}
+    .colqty,.colrate,.colamt{width:auto}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <!-- multi-tenant: this name/logo swaps per signed-in tenant; the shell stays identical -->
+      <h1 id="tenantName">Northern Tire, Inc.</h1>
+      <div class="sub">Work Orders &amp; QuickBooks</div>
+    </div>
+    <div class="qbchip" id="qbChip"><span class="dot"></span>QuickBooks&nbsp;<b>Connected</b></div>
+  </div>
+</header>
+
+<!-- ===== sequenced step ribbon: GREEN -> ORANGE -> BLUE/RED ===== -->
+<div class="ribbon">
+  <div class="steps">
+    <button class="step s1 active" data-step="1" onclick="go(1)">
+      <span class="cnt" id="cntNew">start</span>
+      <span class="n">1</span>
+      <div class="t">Create Work Order</div>
+      <div class="d">Customer, technician &amp; line items</div>
+    </button>
+    <span class="connect">&rarr;</span>
+    <button class="step s2" data-step="2" onclick="go(2)">
+      <span class="cnt" id="cntOpen">0</span>
+      <span class="n">2</span>
+      <div class="t">Open Work Orders</div>
+      <div class="d">In progress — awaiting invoice</div>
+    </button>
+    <span class="connect">&rarr;</span>
+    <button class="step s3" data-step="3" onclick="go(3)">
+      <span class="cnt" id="cntInv">finish</span>
+      <span class="n">3</span>
+      <div class="t">Create Invoice</div>
+      <div class="d">Push to QuickBooks Online</div>
+    </button>
+  </div>
+</div>
+
+<main>
+
+  <!-- ============ STEP 1 — CREATE WORK ORDER (green) ============ -->
+  <section class="panel p1" id="panel1">
+    <div class="panelhead"><span class="tag">Step 1 · Start</span><h2>Create Work Order</h2></div>
+    <p class="hint">Begin a new work order. Enter the customer and add line items the same way you would on a QuickBooks invoice — product/service, description, quantity, and rate. Save it as <b>open</b>; you'll invoice it in step&nbsp;3.</p>
+
+    <div class="grid three">
+      <div class="field">
+        <label>Customer</label>
+        <input type="text" id="f_customer" list="customers" placeholder="Start typing a customer…" autocomplete="off">
+        <datalist id="customers"></datalist>
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="f_date">
+      </div>
+      <div class="field">
+        <label>Technician</label>
+        <select id="f_tech">
+          <option>Jeremy Forbes</option>
+          <option>Rodney Saul</option>
+          <option>Shop</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-div"></div>
+
+    <div class="subhead"><span class="lab">Line items</span><span class="eyebrow">QuickBooks style</span></div>
+    <div style="overflow-x:auto">
+      <table class="litable" id="liTable">
+        <thead>
+          <tr>
+            <th class="rownum">#</th>
+            <th>Product / Service</th>
+            <th>Description</th>
+            <th class="r colqty">Qty</th>
+            <th class="r colrate">Rate</th>
+            <th class="r colamt">Amount</th>
+            <th class="coldel"></th>
+          </tr>
+        </thead>
+        <tbody id="liBody"></tbody>
+      </table>
+    </div>
+    <div class="liadd">
+      <button type="button" onclick="addLine()">＋ Add lines</button>
+      <button type="button" onclick="clearLines()">✕ Clear all lines</button>
+    </div>
+
+    <div class="totals">
+      <div class="totbox">
+        <div class="totrow"><span>Subtotal</span><span class="v num" id="f_subtotal">$0.00</span></div>
+        <div class="totrow grand"><span>Total</span><span class="v num" id="f_total">$0.00</span></div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:16px">
+      <label>Notes</label>
+      <textarea id="f_notes" placeholder="Internal notes (optional)"></textarea>
+    </div>
+
+    <div class="btnrow">
+      <button class="btn go" onclick="saveWO()">✓ Save work order</button>
+      <button class="btn ghost sm" onclick="resetForm()">Clear form</button>
+      <span class="spacer"></span>
+      <span class="eyebrow">Saves as <span style="color:var(--wip)">●</span> open</span>
+    </div>
+  </section>
+
+  <!-- ============ STEP 2 — OPEN WORK ORDERS (orange) ============ -->
+  <section class="panel p2 hidden" id="panel2">
+    <div class="panelhead"><span class="tag">Step 2 · In progress</span><h2>Open Work Orders</h2></div>
+    <p class="hint">Work orders waiting to be invoiced. Open one to review it, or send it straight to <b>Create Invoice</b> when it's ready for QuickBooks.</p>
+    <div id="openList"></div>
+  </section>
+
+  <!-- ============ STEP 3 — CREATE INVOICE -> QBO (blue outline + red) ============ -->
+  <section class="panel p3 hidden" id="panel3">
+    <div class="panelhead"><span class="tag">Step 3 · Finish</span><h2>Create Invoice</h2></div>
+    <p class="hint">Final step. Review the work order, then push it to QuickBooks Online. This creates the invoice in QBO, stamps the invoice number back onto the work order, and marks it invoiced.</p>
+    <div id="invArea"></div>
+  </section>
+
+</main>
+
+<div class="demonote">
+  <b>Design prototype.</b> Runs on local demo data — no live QuickBooks or Supabase calls.
+  Field names (<code>customer, lines, status, invoice_no, technician, invoiced_by…</code>) match the real
+  <code>work_orders</code> table so this drops into the app. Search the source for <code>// WIRE:</code> to see where the real calls go.
+  <b>Multi-tenant:</b> the tenant name/logo in the header swaps per signed-in tenant — the step flow and QuickBooks-style entry are identical for every tenant.
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- demo store (localStorage) ---------------- */
+/* Mirrors the real Supabase work_orders row shape. */
+var KEY="nti_wo_prototype_v1";
+var S={ workOrders:[] };
+
+function load(){
+  try{ var raw=localStorage.getItem(KEY); if(raw){ S=JSON.parse(raw); } }catch(e){}
+  if(!S.workOrders || !S.workOrders.length) seed();
+}
+function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+function seed(){
+  S.workOrders=[
+    { id:woId(), date:"2026-06-24", customer:"Carmeuse Lime & Stone", technician:"Jeremy Forbes",
+      status:"open", invoice_no:"", notes:"", email_sent:false, invoiced_by:"", created_at:Date.now()-86400000*4,
+      lines:[
+        {item:"Tire — Loader 23.5R25", desc:"Front left, mount & balance", qty:2, rate:1240.00},
+        {item:"Service call", desc:"On-site, 1 hr", qty:1, rate:135.00}
+      ]},
+    { id:woId(), date:"2026-06-26", customer:"City of Ironton — Fleet", technician:"Rodney Saul",
+      status:"open", invoice_no:"", notes:"PO #4471", email_sent:false, invoiced_by:"", created_at:Date.now()-86400000*2,
+      lines:[
+        {item:"Tire — LT265/70R17", desc:"Set of 4, road hazard", qty:4, rate:212.50},
+        {item:"Alignment", desc:"4-wheel", qty:1, rate:99.00}
+      ]},
+    { id:woId(), date:"2026-06-12", customer:"Tri-State Trucking", technician:"Jeremy Forbes",
+      status:"invoiced", invoice_no:"1042", email_sent:true, invoiced_by:"Rodney Saul", notes:"", created_at:Date.now()-86400000*16,
+      lines:[ {item:"Tire — 11R22.5 Drive", desc:"Recap, 8 ea", qty:8, rate:289.00} ]}
+  ];
+  persist();
+}
+
+/* ---------------- helpers ---------------- */
+function woId(){ return "WO-"+Math.floor(100000+Math.random()*899999); }
+function money(n){ return "$"+(Number(n)||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function lineAmt(l){ return (Number(l.qty)||0)*(Number(l.rate)||0); }
+function woTotal(wo){ return (wo.lines||[]).reduce(function(s,l){return s+lineAmt(l);},0); }
+function el(id){ return document.getElementById(id); }
+function toast(msg,kind){ var t=el("toast"); t.textContent=msg; t.className="toast show"+(kind?" "+kind:""); setTimeout(function(){ t.className="toast"+(kind?" "+kind:""); },2200); }
+
+/* ---------------- step navigation ---------------- */
+var current=1, draftLines=[];
+function go(n){
+  current=n;
+  [1,2,3].forEach(function(i){
+    el("panel"+i).classList.toggle("hidden", i!==n);
+    document.querySelector('.step[data-step="'+i+'"]').classList.toggle("active", i===n);
+  });
+  if(n===2) renderOpen();
+  if(n===3) renderInvoice();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---------------- step 1: create ---------------- */
+function newDraftLine(){ return {item:"",desc:"",qty:1,rate:0}; }
+function renderLines(){
+  var b=el("liBody"); b.innerHTML="";
+  draftLines.forEach(function(l,i){
+    var tr=document.createElement("tr");
+    tr.innerHTML=
+      '<td class="rownum">'+(i+1)+'</td>'+
+      '<td><input type="text" placeholder="Product / service" value="'+esc(l.item)+'" oninput="upd('+i+',\'item\',this.value)"></td>'+
+      '<td><input type="text" placeholder="Description" value="'+esc(l.desc)+'" oninput="upd('+i+',\'desc\',this.value)"></td>'+
+      '<td class="r colqty"><input type="number" min="0" step="1" value="'+l.qty+'" oninput="upd('+i+',\'qty\',this.value)"></td>'+
+      '<td class="r colrate"><input type="number" min="0" step="0.01" value="'+l.rate+'" oninput="upd('+i+',\'rate\',this.value)"></td>'+
+      '<td class="amt num">'+money(lineAmt(l))+'</td>'+
+      '<td class="coldel"><button class="del" title="Remove line" onclick="delLine('+i+')">×</button></td>';
+    b.appendChild(tr);
+  });
+  var sub=draftLines.reduce(function(s,l){return s+lineAmt(l);},0);
+  el("f_subtotal").textContent=money(sub);
+  el("f_total").textContent=money(sub);
+}
+function esc(s){ return String(s==null?"":s).replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+window.upd=function(i,k,v){ draftLines[i][k]=(k==="qty"||k==="rate")?v:v; if(k==="qty"||k==="rate"){ /* refresh amount cell only */ } renderLines(); };
+window.addLine=function(){ draftLines.push(newDraftLine()); renderLines(); };
+window.delLine=function(i){ draftLines.splice(i,1); if(!draftLines.length) draftLines.push(newDraftLine()); renderLines(); };
+window.clearLines=function(){ draftLines=[newDraftLine()]; renderLines(); };
+
+function resetForm(){
+  el("f_customer").value=""; el("f_tech").value="Jeremy Forbes"; el("f_notes").value="";
+  el("f_date").value=today(); draftLines=[newDraftLine(),newDraftLine()]; renderLines();
+}
+function today(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+
+window.saveWO=function(){
+  var cust=el("f_customer").value.trim();
+  if(!cust){ toast("Enter a customer first."); el("f_customer").focus(); return; }
+  var lines=draftLines.filter(function(l){ return (l.item||l.desc) && (Number(l.qty)||Number(l.rate)); });
+  if(!lines.length){ toast("Add at least one line item."); return; }
+  var wo={
+    id:woId(), date:el("f_date").value||today(), customer:cust, technician:el("f_tech").value,
+    lines:lines.map(function(l){ return {item:l.item,desc:l.desc,qty:Number(l.qty)||0,rate:Number(l.rate)||0}; }),
+    status:"open", invoice_no:"", notes:el("f_notes").value.trim(), email_sent:false, invoiced_by:"", created_at:Date.now()
+  };
+  S.workOrders.unshift(wo);
+  persist();
+  // WIRE: in the real app -> Supabase insert into work_orders (status defaults to 'open')
+  resetForm(); refreshCounts();
+  toast("Work order saved as open — see step 2","go");
+  go(2);
+};
+
+/* ---------------- step 2: open list ---------------- */
+function renderOpen(){
+  var open=S.workOrders.filter(function(w){return w.status==="open";});
+  var box=el("openList");
+  if(!open.length){ box.innerHTML='<div class="empty">No open work orders. Create one in <b>step 1</b>.</div>'; return; }
+  box.innerHTML=open.map(function(w){
+    return '<div class="wo-card">'+
+      '<div class="who"><div class="nm">'+esc(w.customer)+' <span class="pill open">open</span></div>'+
+      '<div class="meta">'+w.id+' · '+w.date+' · '+esc(w.technician)+' · '+(w.lines||[]).length+' line(s)'+(w.notes?' · '+esc(w.notes):'')+'</div></div>'+
+      '<div class="amt num">'+money(woTotal(w))+'</div>'+
+      '<button class="btn invoice sm" onclick="toInvoice(\''+w.id+'\')">Create invoice <span class="rd">→ QBO</span></button>'+
+    '</div>';
+  }).join("");
+}
+window.toInvoice=function(id){ selectedId=id; go(3); };
+
+/* ---------------- step 3: invoice / QBO ---------------- */
+var selectedId=null;
+function renderInvoice(){
+  var area=el("invArea");
+  var open=S.workOrders.filter(function(w){return w.status==="open";});
+  if(!selectedId && open.length) selectedId=open[0].id;
+  var wo=S.workOrders.find(function(w){return w.id===selectedId;});
+  if(!wo || wo.status!=="open"){
+    area.innerHTML='<div class="empty">No work order selected. Pick one from <b>step 2 — Open Work Orders</b>.</div>'+
+      (open.length?'':'<div class="empty">Nothing open to invoice right now.</div>');
+    if(open.length){ selectedId=open[0].id; return renderInvoice(); }
+    return;
+  }
+  var rows=(wo.lines||[]).map(function(l){
+    return '<tr><td>'+esc(l.item)+(l.desc?' <span style="color:var(--muted)">— '+esc(l.desc)+'</span>':'')+'</td>'+
+           '<td class="r num">'+l.qty+'</td><td class="r num">'+money(l.rate)+'</td><td class="r num">'+money(lineAmt(l))+'</td></tr>';
+  }).join("");
+  var picker = open.length>1 ? '<select onchange="selectedId=this.value;renderInvoice()" style="max-width:280px">'+
+      open.map(function(w){return '<option value="'+w.id+'"'+(w.id===selectedId?' selected':'')+'>'+esc(w.customer)+' — '+money(woTotal(w))+'</option>';}).join("")+'</select>' : '';
+
+  area.innerHTML=
+    (picker?'<div class="field" style="margin-bottom:16px"><label>Work order to invoice</label>'+picker+'</div>':'')+
+    '<div class="invsummary">'+
+      '<div class="sh"><span class="nm">'+esc(wo.customer)+'</span><span class="pill open">open</span></div>'+
+      '<table><tbody>'+rows+
+        '<tr><td colspan="3" class="r"><b>Total</b></td><td class="r num"><b>'+money(woTotal(wo))+'</b></td></tr>'+
+      '</tbody></table>'+
+    '</div>'+
+    '<div class="kv"><div><b>Work order</b> '+wo.id+'</div><div><b>Date</b> '+wo.date+'</div><div><b>Technician</b> '+esc(wo.technician)+'</div></div>'+
+    '<div class="qbo-callout">'+
+      '<div class="eyebrow" style="margin-bottom:8px">Push to QuickBooks Online</div>'+
+      '<p style="margin:0 0 14px;font-size:13px;color:var(--muted)">Creates the invoice in QBO for <b style="color:var(--ink)">'+esc(wo.customer)+'</b>, then stamps the <span class="red">invoice number</span> back onto this work order and marks it invoiced.</p>'+
+      '<div class="btnrow" style="margin-top:0">'+
+        '<button class="btn invoice" onclick="createInvoice(\''+wo.id+'\')">Create invoice in QuickBooks <span class="rd">●</span></button>'+
+        '<button class="btn ghost sm" onclick="go(2)">Back to open</button>'+
+      '</div>'+
+    '</div>';
+}
+
+window.createInvoice=function(id){
+  var wo=S.workOrders.find(function(w){return w.id===id;});
+  if(!wo) return;
+  // WIRE: in the real app -> mcp/QBO create invoice, then Supabase update:
+  //   status='invoiced', invoice_no=<from QBO>, invoiced_by=<current user>, email_sent per send
+  var num=String(1043+S.workOrders.filter(function(w){return w.status==="invoiced";}).length); // demo number
+  wo.status="invoiced"; wo.invoice_no=num; wo.invoiced_by="Rodney Saul";
+  persist(); refreshCounts(); selectedId=null;
+  toast("Invoice #"+num+" created in QuickBooks","inv");
+  go(2);
+};
+
+/* ---------------- counts on the ribbon ---------------- */
+function refreshCounts(){
+  var open=S.workOrders.filter(function(w){return w.status==="open";}).length;
+  el("cntOpen").textContent=open;
+}
+
+/* ---------------- boot ---------------- */
+load();
+el("f_date").value=today();
+draftLines=[newDraftLine(),newDraftLine()];
+renderLines();
+refreshCounts();
+// seed customer suggestions
+(function(){
+  var names=Array.from(new Set(S.workOrders.map(function(w){return w.customer;})));
+  el("customers").innerHTML=names.map(function(n){return '<option value="'+esc(n)+'">';}).join("");
+})();
+</script>
+</body>
+</html>
