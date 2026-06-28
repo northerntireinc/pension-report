@@ -2170,5 +2170,78 @@ injectDom();
 renderAll();
 })();
 </script>
+<script>
+/* ===== NTI payroll — no-sign-in cloud sync (shared via payroll-sync) ===== */
+(function(){
+"use strict";
+
+function psUrl(){ return sbBase()+"/functions/v1/payroll-sync"; }
+function psHeaders(){ return {"apikey":String(S.settings.syncKey||"").trim(),"Content-Type":"application/json"}; }
+
+var psLastCfg=null, psReady=false;
+
+/* with no-sign-in sync, "signed in" just means the URL + anon key are set */
+window.signedIn=function(){ return sbConfigured(); };
+
+window.syncPull=async function(){
+  if(!sbConfigured()) return;
+  syncChip("busy");
+  try{
+    var r=await fetch(psUrl()+"?action=get",{headers:psHeaders()});
+    if(!r.ok){ var tx=await r.text(); syncMsg("Sync read failed: "+tx.slice(0,140),"err"); syncChip("err"); return; }
+    var j=await r.json();
+    if(j && j.error){ syncMsg("Sync: "+j.error,"err"); syncChip("err"); return; }
+    if(j && j.doc){
+      var remoteTs=Date.parse(j.updated_at||"")||0;
+      if(remoteTs > (syncLastTs||0)){ applyRemote(j.doc); syncLastTs=remoteTs; }
+    }
+    psReady=true;                       /* safe to push only after a successful pull */
+    syncChip("on"); syncMsg("Up to date · "+new Date().toLocaleTimeString(),"on");
+  }catch(e){ syncMsg("Network error during sync.","err"); syncChip("err"); }
+};
+
+window.syncPush=async function(){
+  if(syncApplying || !sbConfigured() || !psReady) return;   /* never push before first pull */
+  syncChip("busy");
+  try{
+    var nowIso=new Date().toISOString();
+    var r=await fetch(psUrl()+"?action=put",{method:"POST",headers:psHeaders(),body:JSON.stringify({doc:syncDoc()})});
+    if(r.ok){ syncLastTs=Date.parse(nowIso); syncChip("on"); syncMsg("Saved · "+new Date().toLocaleTimeString(),"on"); }
+    else { var tx=await r.text(); syncMsg("Save failed: "+tx.slice(0,160),"err"); syncChip("err"); }
+  }catch(e){ syncMsg("Network error during save.","err"); syncChip("err"); }
+};
+
+window.syncNow=async function(){ if(!sbConfigured()){ syncMsg("Add your Supabase URL + anon key above first.","err"); return; } await syncPull(); await syncPush(); };
+
+/* auto-pull once whenever the URL/key config changes (e.g. first paste on a device) */
+function psAutoPull(){
+  if(!sbConfigured()) return;
+  var cfg=sbBase()+"|"+String(S.settings.syncKey||"").trim();
+  if(cfg===psLastCfg) return;
+  psLastCfg=cfg; psReady=false;
+  syncPull();
+}
+
+/* no email/code UI any more — just show sync status */
+window.renderSync=function(){
+  if(typeof set==="function"){ set("syncUrl",S.settings.syncUrl||""); set("syncKey",S.settings.syncKey||""); }
+  var box=document.getElementById("syncAuth"); if(!box) return;
+  if(!sbConfigured()){ box.innerHTML='<div class="footnote">Paste your NTI Supabase <b>URL</b> and <b>anon key</b> above to turn on sync. <b>No sign-in needed.</b></div>'; syncChip("off"); return; }
+  box.innerHTML='<div class="prtsum" style="margin-bottom:6px">Sync is <b>on</b> — no sign-in needed.</div>'
+    +'<div class="footnote" style="margin-bottom:8px">Every device with this same URL + anon key shares the data automatically (everything except SSNs, which stay on each device).</div>'
+    +'<div class="btnrow" style="margin:0"><button class="btn ghost sm" onclick="syncNow()">Sync now</button></div>';
+  syncChip("on");
+  psAutoPull();
+}
+
+/* refresh the Cloud sync card copy and drop the old "sign in per device" wording */
+(function fixSyncCopy(){
+  var sc=document.querySelectorAll("#tab-setup .synccard");
+  if(sc&&sc[0]){ var p=sc[0].querySelector("p.footnote"); if(p) p.innerHTML="Sync this app across all your devices through your NTI Supabase project. <b>No sign-in needed</b> — paste the same Supabase URL + anon key on each device and they share data automatically. Everything syncs <b>except SSNs</b>, which stay on each device."; }
+})();
+
+renderSync();
+})();
+</script>
 </body>
 </html>
