@@ -2010,8 +2010,11 @@ function portalOn(){ return !!(S.settings.portal && S.settings.portal.ts); }
 function portalYear(wp){ return (wp&&wp.end)?String(wp.end).slice(0,4):String(new Date().getFullYear()); }
 function usedFor(emp){ var p=S.settings.portal||{}; return (p.used&&p.used[portalIdFor(emp)])||{S:0,V:0}; }
 function leftFor(emp){
-  if(portalOn()){ var u=usedFor(emp); return { sick:Math.max(0,(Number(emp.sickAllot)||0)-(u.S||0)), vac:Math.max(0,(Number(emp.vacAllot)||0)-(u.V||0)) }; }
-  return { sick:Math.max(0,Number(emp.sickDays)||0), vac:Math.max(0,Number(emp.vacDays)||0) };
+  /* contract: 9 sick days/yr (reset each June). Default to 9 unless overridden. */
+  var sa=(emp.sickAllot!=null&&emp.sickAllot!=="")?Number(emp.sickAllot):9;
+  var va=(emp.vacAllot!=null&&emp.vacAllot!=="")?Number(emp.vacAllot):0;
+  var u=portalOn()?usedFor(emp):{S:0,V:0};
+  return { sick:Math.max(0,sa-(u.S||0)), vac:Math.max(0,va-(u.V||0)) };
 }
 function portalEntryType(emp,iso){ var p=S.settings.portal||{}; var e=(p.entries&&p.entries[portalIdFor(emp)])||{}; return e[iso]||""; }
 function leaveAllocFor(emp,wp){
@@ -2047,13 +2050,19 @@ window.portalImport=async function(){
   try{
     var j=await portalCall("?action=summary");
     var al={}; ((j&&j.allotments)||[]).forEach(function(a){ al[String(a.emp_id).toLowerCase()]={sick:Number(a.sick)||0,vac:Number(a.vac)||0}; });
-    var wp=S.settings.weekPull, yr=portalYear(wp), used={}, entries={};
+    var wp=S.settings.weekPull, ref=(wp&&wp.end)?String(wp.end):isoD(new Date());
+    var ry=+ref.slice(0,4), rm=+ref.slice(5,7);
+    var sickStart=(rm>=6?ry:ry-1)+"-06-01";   /* sick year resets June 1 */
+    var vacStart=ry+"-01-01";                   /* vacation resets Jan 1 (calendar) */
+    var used={}, entries={};
     ((j&&j.entries)||[]).forEach(function(e){
       var pid=String(e.emp_id).toLowerCase(), dt=String(e.date), ty=String(e.type).toUpperCase().charAt(0);
       if(!entries[pid]) entries[pid]={}; entries[pid][dt]=ty;
-      if(dt.slice(0,4)===yr){ if(!used[pid])used[pid]={S:0,V:0}; if(ty==="S")used[pid].S++; else if(ty==="V")used[pid].V++; }
+      if(!used[pid])used[pid]={S:0,V:0};
+      if(ty==="S" && dt>=sickStart) used[pid].S++;
+      else if(ty==="V" && dt>=vacStart) used[pid].V++;
     });
-    S.settings.portal={ ts:new Date().toISOString(), year:yr, used:used, entries:entries };
+    S.settings.portal={ ts:new Date().toISOString(), sickStart:sickStart, vacStart:vacStart, used:used, entries:entries };
     S.employees.forEach(function(emp){ var a=al[portalIdFor(emp)]; if(a){ emp.sickAllot=a.sick; emp.vacAllot=a.vac; } });
     persist(); renderReport();
     alert("Imported from portal — allotments and "+(((j&&j.entries)||[]).length)+" leave day(s) (year "+yr+").");
