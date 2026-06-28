@@ -1889,5 +1889,286 @@ if(typeof signedIn==="function" && signedIn()){ syncPull(); }
 window.addEventListener("focus", function(){ if(typeof signedIn==="function" && signedIn()) syncPull(); });
 document.addEventListener("visibilitychange", function(){ if(!document.hidden && typeof signedIn==="function" && signedIn()) syncPull(); });
 </script>
+<script>
+/* ===== NTI payroll — weekly pull + dollar adjustments + no-sign-in (patch) ===== */
+(function(){
+"use strict";
+
+/* 1 — TimeStation needs no sign-in now (function is verify_jwt:false) */
+window.tsCall=async function(qs){
+  if(!sbConfigured()) throw new Error("Add your Supabase URL + anon key in Setup → Cloud sync first.");
+  var r=await fetch(tsFnUrl()+qs,{headers:{"apikey":String(S.settings.syncKey||"").trim(),"Content-Type":"application/json"}});
+  var j=null; try{ j=await r.json(); }catch(e){}
+  if(!r.ok) throw new Error((j&&j.error)||("Function error "+r.status+" — is timestation-pull deployed in your NTI project?"));
+  return j;
+};
+window.renderTsInit=function(){
+  var n=Object.keys((S.settings&&S.settings.tsMap)||{}).length;
+  tsChip(n>0 && sbConfigured() ? "on":"off");
+  var box=document.getElementById("tsMapBox");
+  if(n>0 && box && !(typeof tsEmpCache!=="undefined" && tsEmpCache.length)) box.innerHTML='<div class="footnote">'+n+' employee match'+(n===1?"":"es")+' saved. Click “Load &amp; map employees” to review or change.</div>';
+};
+
+/* 2 — most recently finished Sun–Sat week */
+window.lastCompletedWeek=function(){
+  var today=new Date(); today.setHours(0,0,0,0);
+  var end=new Date(today);
+  do{ end.setDate(end.getDate()-1); }while(end.getDay()!==6);
+  var start=new Date(end); start.setDate(start.getDate()-6);
+  return {start:isoD(start), end:isoD(end)};
+};
+function setWeekBtnLabel(){
+  var b=document.getElementById("btnPullWeek"); if(!b) return;
+  var w=lastCompletedWeek(); b.textContent="Pull last week: "+fmtD(w.start)+"–"+fmtD(w.end);
+}
+
+/* weekly pull — payroll only; does NOT touch the month's 3029 hours */
+window.tsPullWeek=async function(){
+  var w=lastCompletedWeek(), map=S.settings.tsMap||{};
+  if(!Object.keys(map).length){ alert("Match your TimeStation people first:\nSetup → TimeStation → Load & map employees."); gotoTab("setup"); return; }
+  var b=document.getElementById("btnPullWeek"); if(b){ b.disabled=true; b.textContent="Pulling…"; }
+  try{
+    var j=await tsCall("?action=summary&start="+encodeURIComponent(w.start)+"&end="+encodeURIComponent(w.end));
+    var byId={}; ((j&&j.employees)||[]).forEach(function(te){ byId[te.employee_id]=te; });
+    var hours={}, applied=[], missing=[];
+    S.employees.forEach(function(emp){
+      var tsid=map[emp.id]; if(!tsid) return;
+      var te=byId[tsid]; if(!te){ missing.push(lastName(emp.name)); return; }
+      var hh=Math.round((Number(te.hours)||0)*100)/100;
+      hours[emp.id]=hh; applied.push(lastName(emp.name)+" "+hrs(hh));
+    });
+    S.settings.weekPull={start:w.start,end:w.end,hours:hours,ts:new Date().toISOString()};
+    persist(); renderReport();
+    var msg="Pulled last week "+fmtD(w.start)+"–"+fmtD(w.end)+": "+(applied.join(", ")||"nothing matched");
+    if(missing.length) msg+=" · no clock data for: "+missing.join(", ");
+    alert(msg+"\n\nReview below, then tap “Email last week to Tandem Tax.”");
+  }catch(e){ alert(String(e.message||e)); }
+  finally{ if(b) b.disabled=false; setWeekBtnLabel(); }
+};
+
+function rpad(s,n){s=String(s);while(s.length<n)s+=" ";return s;}
+function lpadx(s,n){s=String(s);while(s.length<n)s=" "+s;return s;}
+function payrollWeekBody(){
+  var s=S.settings, wp=s.weekPull||{hours:{}}, L=[];
+  L.push(s.employer+" — Weekly Payroll");
+  L.push("Week: "+fmtFull(wp.start)+" – "+fmtFull(wp.end)+" (paid the following Friday)");
+  L.push("Prepared for Tandem Tax (Avery)","");
+  L.push(rpad("Employee",26)+lpadx("Hours",9));
+  L.push("----------------------------------");
+  var th=0,n=0,clT=0,hasCl=false;
+  S.employees.forEach(function(emp){
+    var hh=(wp.hours&&wp.hours[emp.id]!=null)?(Number(wp.hours[emp.id])||0):null;
+    var cl=Number(emp.clericalWeekly)||0;
+    if(hh==null && cl<=0) return;
+    n++; if(hh!=null) th+=hh;
+    var tag=((emp.coverage||"union")==="mgmt")?" (mgmt)":"";
+    L.push(rpad(emp.name+tag,26)+lpadx(hh!=null?hrs(hh):"—",9));
+    if(cl>0){ hasCl=true; clT+=cl; L.push(rpad("   + clerical (non-pension)",26)+lpadx("$"+money(cl),9)+"  (1 wk x $"+money(emp.clericalWeekly)+")"); }
+  });
+  if(!n) L.push("(no hours pulled for this week yet)");
+  L.push("----------------------------------");
+  L.push(rpad("Total paid hours",26)+lpadx(hrs(th),9));
+  if(hasCl) L.push(rpad("Total clerical (non-pension)",26)+lpadx("$"+money(clT),9));
+  L.push("");
+  if(hasCl) L.push("NOTE: Clerical pay is straight wages and is NOT pension/fringe reportable.");
+  L.push("Sent from the Northern Tire payroll app.");
+  return L.join("\n");
+}
+window.emailPayrollWeek=function(){
+  var wp=S.settings.weekPull;
+  if(!wp||!wp.hours){ alert("Pull last week first (Shop Report tab)."); gotoTab("report"); return; }
+  var to=(S.settings.payrollTo||"").trim();
+  if(!to){ alert("Add Avery's email under Setup → Payroll email first."); gotoTab("setup"); return; }
+  var cc=(S.settings.payrollCc||"").trim();
+  var subj=(S.settings.employer||"Northern Tire")+" weekly payroll — "+fmtD(wp.start)+" to "+fmtD(wp.end);
+  window.location.href="mailto:"+encodeURIComponent(to)+"?subject="+encodeURIComponent(subj)+(cc?"&cc="+encodeURIComponent(cc):"")+"&body="+encodeURIComponent(payrollWeekBody());
+};
+function renderWeekBox(){
+  var box=document.getElementById("weekBox"); if(!box) return;
+  var wp=S.settings.weekPull;
+  if(!wp||!wp.hours){ box.innerHTML=""; return; }
+  var w=lastCompletedWeek(), stale=(wp.end!==w.end), rows="", th=0;
+  S.employees.forEach(function(emp){
+    if(wp.hours[emp.id]==null) return;
+    var hh=Number(wp.hours[emp.id])||0; th+=hh;
+    rows+='<tr><td>'+esc(emp.name)+'</td><td class="num">'+hrs(hh)+'</td></tr>';
+  });
+  box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
+    +'<div><div class="eyebrow">Last week pulled · payroll</div><div class="prtsum">'+fmtD(wp.start)+' – '+fmtD(wp.end)+(stale?' <span class="pill floor">old week — re-pull</span>':'')+'</div></div>'
+    +'<button class="btn" onclick="emailPayrollWeek()">Email last week to Tandem Tax</button></div>'
+    +'<table class="sumtbl mini" style="margin-top:10px"><thead><tr><th>Employee</th><th class="num">Hours</th></tr></thead><tbody>'+rows+'</tbody>'
+    +'<tfoot><tr><td>Total</td><td class="num">'+hrs(th)+'</td></tr></tfoot></table></div>';
+}
+
+/* monthly pull — fills the month's 3029 hours (relabelled button) */
+window.tsPull=async function(){
+  var p=periodFor(S.currentMonth); if(!p||!p.start||!p.end){ alert("No pay period set for this month."); return; }
+  var map=S.settings.tsMap||{};
+  if(!Object.keys(map).length){ alert("Match your TimeStation people first:\nSetup → TimeStation → Load & map employees."); gotoTab("setup"); return; }
+  var btns=document.querySelectorAll('button[onclick="tsPull()"]'); btns.forEach(function(b){b.disabled=true;b.textContent="Pulling…";});
+  try{
+    var j=await tsCall("?action=summary&start="+encodeURIComponent(p.start)+"&end="+encodeURIComponent(p.end));
+    var byId={}; ((j&&j.employees)||[]).forEach(function(te){ byId[te.employee_id]=te; });
+    var applied=[], missing=[];
+    S.employees.forEach(function(emp){
+      var tsid=map[emp.id]; if(!tsid) return;
+      var te=byId[tsid]; if(!te){ missing.push(lastName(emp.name)); return; }
+      var hh=Math.round((Number(te.hours)||0)*100)/100, e=entry(emp.id);
+      if(emp.type==="salaried") e.salHours=hh; else e.worked=hh;
+      applied.push(lastName(emp.name)+" "+hrs(hh));
+    });
+    S.settings.tsLast=new Date().toISOString(); persist(); renderAll();
+    var msg="Pulled "+p.start+"–"+p.end+" into the month: "+(applied.join(", ")||"nothing matched");
+    if(missing.length) msg+=" · no clock data for: "+missing.join(", ");
+    alert(msg);
+  }catch(e){ alert(String(e.message||e)); }
+  finally{ var bb=document.querySelectorAll('button[onclick="tsPull()"]'); bb.forEach(function(b){b.disabled=false;b.textContent="Pull month for 3029";}); }
+};
+
+/* 3 — dollar adjustments per month per coverage */
+function monthAdjObj(){ var m=monthData(); if(!m.__adj||typeof m.__adj!=="object") m.__adj={union:{},mgmt:{}}; if(!m.__adj.union)m.__adj.union={}; if(!m.__adj.mgmt)m.__adj.mgmt={}; return m.__adj; }
+window.adjFor=function(cov,fid){ var a=monthAdjObj()[cov==="mgmt"?"mgmt":"union"], v=Number(a[fid]); return isFinite(v)?v:0; };
+window.adjTotal=function(cov){ var a=monthAdjObj()[cov==="mgmt"?"mgmt":"union"], s=0; Object.keys(a).forEach(function(k){ var v=Number(a[k]); if(isFinite(v)) s+=v; }); return s; };
+function setAdjValue(cov,fid,val){ var a=monthAdjObj()[cov==="mgmt"?"mgmt":"union"], v=Number(val); if(val===""||!isFinite(v)||v===0) delete a[fid]; else a[fid]=v; persist(); }
+function fundDisplay(cov){
+  var g=groupTotals(cov), pf={},ph={},pb={};
+  S.settings.funds.forEach(function(f){pf[f.id]=0;ph[f.id]=0;pb[f.id]=0;});
+  g.list.forEach(function(emp){ var c=calcEmp(emp); if(c.hours<=0&&c.base<=0)return;
+    S.settings.funds.forEach(function(f){ if(fundApplies(emp,f)){ pf[f.id]+=c.fundAmts[f.id]||0; ph[f.id]+=c.hours; pb[f.id]+=c.base; } }); });
+  function applies(f){ return cov==="mgmt" ? f.mgmt===true : true; }
+  var funds=S.settings.funds.filter(function(f){ return applies(f)&&Number(f.rate)>0&&((f.basis==="pct"?pb[f.id]:ph[f.id])>0); });
+  return {funds:funds,pf:pf,g:g};
+}
+window.onAdj=function(cov,fid,val){ setAdjValue(cov,fid,val); renderPackets(); updateAdjTotals(cov); refreshPrintSummaries(); };
+function updateAdjTotals(cov){
+  var d=fundDisplay(cov), pf=d.pf;
+  d.funds.forEach(function(f){ var c=document.getElementById("adjtot_"+cov+"_"+f.id); if(c) c.innerHTML="<b>$"+money((pf[f.id]||0)+adjFor(cov,f.id))+"</b>"; });
+  var at=adjTotal(cov), tot=d.g.t.total+at;
+  var ga=document.getElementById("adjgrandadj_"+cov); if(ga) ga.textContent=(at?((at<0?"-$":"+$")+money(Math.abs(at))):"$0.00");
+  var gt=document.getElementById("adjgrandtot_"+cov); if(gt) gt.textContent="$"+money(tot);
+  var sm=document.getElementById("adjsum_"+cov); if(sm) sm.textContent=(at?(" · "+(at<0?"-$":"+$")+money(Math.abs(at))):"");
+}
+function renderAdjEditor(cov,elId){
+  var el=document.getElementById(elId); if(!el) return;
+  var d=fundDisplay(cov), pf=d.pf;
+  if(!d.funds.length){ el.innerHTML=""; return; }
+  var rows=d.funds.map(function(f){
+    var v=adjFor(cov,f.id);
+    return '<tr><td>'+esc(f.name)+'</td><td class="num">$'+money(pf[f.id])+'</td>'
+      +'<td class="num"><input type="number" step="0.01" value="'+(v?v:"")+'" oninput="onAdj(\''+cov+'\',\''+f.id+'\',this.value)" placeholder="0.00" style="width:110px;text-align:right;font-variant-numeric:tabular-nums"></td>'
+      +'<td class="num" id="adjtot_'+cov+'_'+f.id+'"><b>$'+money((pf[f.id]||0)+v)+'</b></td></tr>';
+  }).join("");
+  var at=adjTotal(cov), tot=d.g.t.total+at;
+  el.innerHTML='<details'+(at?' open':'')+' style="margin-bottom:12px"><summary class="eyebrow" style="cursor:pointer;margin-bottom:6px">Adjustments — dollar corrections ('+(cov==="mgmt"?"Salary":"Shop")+')<span id="adjsum_'+cov+'">'+(at?(" · "+(at<0?"-$":"+$")+money(Math.abs(at))):"")+'</span></summary>'
+    +'<p class="footnote" style="margin:0 0 8px">Type a dollar correction on any fund line to true up a prior filing — use a negative number to subtract. It flows into the <b>Adjustments</b> column and <b>Total</b> on the printed 3029.</p>'
+    +'<div style="overflow-x:auto"><table class="sumtbl mini"><thead><tr><th>Fund</th><th class="num">Amount</th><th class="num">Adjustment $</th><th class="num">Total</th></tr></thead><tbody>'+rows
+    +'</tbody><tfoot><tr><td>Grand total</td><td class="num"></td><td class="num" id="adjgrandadj_'+cov+'">'+(at?((at<0?"-$":"+$")+money(Math.abs(at))):"$0.00")+'</td><td class="num" id="adjgrandtot_'+cov+'">$'+money(tot)+'</td></tr></tfoot></table></div></details>';
+}
+
+/* packets + form override (adds Adjustments + adjusted Total/grand total) */
+window.renderPackets=function(){
+  var u=document.getElementById("packetUnion"); if(u) u.innerHTML=packetHTML("union","Shop Agreement Report","");
+  var m=document.getElementById("packetMgmt"); if(m) m.innerHTML=packetHTML("mgmt","Salary Report","Non-union / management — health care contribution only.");
+};
+var _formP1=formP1;
+window.formP1=function(cov,title){
+  var html=_formP1(cov,title);
+  var d=fundDisplay(cov), grandAdj=0;
+  /* rebuild remittance rows with adjustments by re-running the same math the original uses */
+  var s=S.settings, g=groupTotals(cov), pf={},ph={},pb={};
+  S.settings.funds.forEach(function(f){pf[f.id]=0;ph[f.id]=0;pb[f.id]=0;});
+  g.list.forEach(function(emp){ var c=calcEmp(emp); if(c.hours<=0&&c.base<=0)return;
+    S.settings.funds.forEach(function(f){ if(fundApplies(emp,f)){ pf[f.id]+=c.fundAmts[f.id]||0; ph[f.id]+=c.hours; pb[f.id]+=c.base; } }); });
+  function applies(f){ return cov==="mgmt" ? f.mgmt===true : true; }
+  var remit="";
+  S.settings.funds.forEach(function(f){
+    var on=applies(f)&&Number(f.rate)>0&&((f.basis==="pct"?pb[f.id]:ph[f.id])>0);
+    var adj=on?adjFor(cov,f.id):0; if(on) grandAdj+=adj;
+    var tot=(pf[f.id]||0)+adj;
+    remit+='<tr><td class="rx romit"></td><td class="rf">'+esc(f.name.toUpperCase())+'</td>'
+      +'<td class="rr">'+(on?"$"+money(f.rate):"")+'</td><td class="rx">'+(on?"x":"")+'</td>'
+      +'<td class="rm">'+(on?(f.basis==="pct"?money(pb[f.id]):hrs(ph[f.id])):"")+'<div class="msub">'+(f.basis==="pct"?"BASE WAGES":"PAID HOURS")+'</div></td>'
+      +'<td class="ra">'+(on?"$"+money(pf[f.id]):"")+'</td>'
+      +'<td class="radj">'+(on&&adj?((adj<0?"-$":"$")+money(Math.abs(adj))):"")+'</td>'
+      +'<td class="rt">'+(on?"$"+money(tot):"")+'</td></tr>';
+  });
+  var grand=g.t.total+grandAdj;
+  /* swap the original tbody + grand total into the produced HTML */
+  html=html.replace(/(<tbody>)[\s\S]*?(<\/tbody>\s*<tfoot>)/, '$1'+remit+'$2');
+  html=html.replace(/(class="rt grt">)\$[\d,]+\.\d2(<\/td>)/, '$1$'+money(grand)+'$2');
+  return html;
+};
+
+window.refreshPrintSummaries=function(){
+  var gu=groupTotals("union").t, gm=groupTotals("mgmt").t;
+  var su=document.getElementById("sumUnion"); if(su) su.textContent=gu.count+" employee"+(gu.count===1?"":"s")+" · $"+money(gu.total+adjTotal("union"))+" due";
+  var sm=document.getElementById("sumMgmt"); if(sm) sm.textContent=gm.count+" employee"+(gm.count===1?"":"s")+" · $"+money(gm.total+adjTotal("mgmt"))+" due";
+};
+
+var _renderPrint=renderPrint;
+window.renderPrint=function(){
+  _renderPrint();
+  renderAdjEditor("union","adjUnion");
+  renderAdjEditor("mgmt","adjMgmt");
+  refreshPrintSummaries();
+};
+
+var _renderReport=renderReport;
+window.renderReport=function(){ _renderReport(); setWeekBtnLabel(); renderWeekBox(); };
+
+/* capture adjustments into the filing snapshot */
+window.recordFiling=function(kind){
+  kind=(kind==="mgmt")?"mgmt":"union";
+  var t=coverageTotals(kind);
+  if(t.count===0){ alert("Nothing to record for "+(kind==="mgmt"?"Salary":"Shop")+" in "+monthName()+" — no hours entered for that group."); return; }
+  var funds=activeFunds().filter(function(f){return (t.fund[f.id]||0)>0||(t.fundHours[f.id]||0)>0;});
+  var adjT=adjTotal(kind), grand=t.total+adjT;
+  if(!confirm("Record the "+(kind==="mgmt"?"Salary":"Shop")+" filing for "+monthName()+"?\n\nHours: "+hrs(t.hours)+"   Total: $"+money(grand)+(adjT?("  (incl. $"+money(adjT)+" adj)"):""))) return;
+  var snap={ id:id(), ts:Date.now(), kind:kind, month:S.currentMonth, monthName:monthName(), period:periodLabel(S.currentMonth)||"",
+    hours:t.hours, total:grand, adj:adjT,
+    funds:funds.map(function(f){var a=adjFor(kind,f.id);return {name:f.name,rate:Number(f.rate)||0,basis:f.basis||"hr",hours:t.fundHours[f.id]||0,amount:(t.fund[f.id]||0)+a,adj:a};}),
+    employees:t.emps.map(function(e){return {name:e.name,hours:e.hours};}) };
+  if(!Array.isArray(S.filings))S.filings=[];
+  S.filings.push(snap); persist();
+  var b=document.querySelector('nav.tabs button[data-tab="filings"]'); if(b)b.click(); else renderFilings();
+};
+
+/* 4 — inject the new buttons + containers into the page */
+function injectDom(){
+  var row=document.getElementById("importRow");
+  if(row && !document.getElementById("btnPullWeek")){
+    var monthly=row.querySelector('button[onclick="tsPull()"]');
+    var wk=document.createElement("button");
+    wk.className="btn brass sm"; wk.id="btnPullWeek"; wk.setAttribute("onclick","tsPullWeek()"); wk.textContent="Pull last week";
+    row.insertBefore(wk,row.firstChild);
+    if(monthly){ monthly.className="btn ghost sm"; monthly.textContent="Pull month for 3029"; }
+    var help=row.querySelector("span.footnote");
+    if(help) help.innerHTML="<b>Pull last week</b> = the most recently finished Sun&ndash;Sat week, for the Tandem Tax payroll email (it doesn’t touch the month’s 3029 hours). <b>Pull month for 3029</b> fills the monthly fringe report. Or import the Time Clock CSV.";
+  }
+  if(!document.getElementById("weekBox")){
+    var ma=document.getElementById("mapArea");
+    if(ma&&ma.parentNode){ var wb=document.createElement("div"); wb.id="weekBox"; wb.className="no-print"; ma.parentNode.insertBefore(wb,ma); }
+  }
+  if(!document.getElementById("adjUnion")){
+    var pu=document.getElementById("packetUnion");
+    if(pu&&pu.parentNode){ var au=document.createElement("div"); au.id="adjUnion"; au.className="no-print"; pu.parentNode.insertBefore(au,pu); }
+  }
+  if(!document.getElementById("adjMgmt")){
+    var pm=document.getElementById("packetMgmt");
+    if(pm&&pm.parentNode){ var am=document.createElement("div"); am.id="adjMgmt"; am.className="no-print"; pm.parentNode.insertBefore(am,pm); }
+  }
+  var mp=document.querySelector('#tab-print .payrow button[onclick="emailPayroll()"]');
+  if(mp) mp.textContent="Email whole month to Tandem Tax";
+  var nb=document.querySelector('#sundayNudge button[onclick="emailPayroll()"]');
+  if(nb){ nb.setAttribute("onclick","gotoTab('report');setTimeout(tsPullWeek,150)"); nb.textContent="Pull last week"; }
+  var cards=document.querySelectorAll("#tab-setup .synccard");
+  if(cards&&cards[1]){ var p=cards[1].querySelector("p.footnote"); if(p) p.innerHTML="Pull worked hours straight from TimeStation into the Shop Report — no more CSV. The pull runs through your NTI Supabase, which holds the TimeStation key, so the key never lives in this app. Just paste your <b>Supabase URL + anon key</b> in Cloud sync above (no sign-in needed) and deploy the <code>timestation-pull</code> function once in your NTI project. Then match each TimeStation person to your employees."; }
+}
+
+injectDom();
+renderAll();
+})();
+</script>
 </body>
 </html>
