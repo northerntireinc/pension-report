@@ -1996,20 +1996,95 @@ function missedWorkdays(emp,wp){
   });
   return miss;
 }
+/* ---- employee-portal leave integration ---- */
+var PORTAL_URL="https://ogmvswqcvzohizjfgixm.supabase.co/functions/v1/portal-leave";
+var PORTAL_KEY="sb_publishable_maDFN2cyWU7DpM_IJPpoiw_VxWABj61";
+function portalIdFor(emp){
+  if(emp.portalId) return String(emp.portalId).trim().toLowerCase();
+  var nm=emp.name||"", first="", last="";
+  if(nm.indexOf(",")>=0){ var p=nm.split(","); last=p[0].trim(); first=(p[1]||"").trim(); }
+  else { var q=nm.trim().split(/\s+/); first=q[0]||""; last=q[q.length-1]||""; }
+  return ((first.charAt(0)||"")+(last.charAt(0)||"")).toLowerCase();
+}
+function portalOn(){ return !!(S.settings.portal && S.settings.portal.ts); }
+function portalYear(wp){ return (wp&&wp.end)?String(wp.end).slice(0,4):String(new Date().getFullYear()); }
+function usedFor(emp){ var p=S.settings.portal||{}; return (p.used&&p.used[portalIdFor(emp)])||{S:0,V:0}; }
+function leftFor(emp){
+  if(portalOn()){ var u=usedFor(emp); return { sick:Math.max(0,(Number(emp.sickAllot)||0)-(u.S||0)), vac:Math.max(0,(Number(emp.vacAllot)||0)-(u.V||0)) }; }
+  return { sick:Math.max(0,Number(emp.sickDays)||0), vac:Math.max(0,Number(emp.vacDays)||0) };
+}
+function portalEntryType(emp,iso){ var p=S.settings.portal||{}; var e=(p.entries&&p.entries[portalIdFor(emp)])||{}; return e[iso]||""; }
 function leaveAllocFor(emp,wp){
   if(wp&&wp.applied&&wp.leave&&wp.leave[emp.id]) return wp.leave[emp.id];   /* frozen once applied */
   var c=classifyEmpWeek(emp.id,wp);
-  if(!c.dated) return {missedD:0,sickD:0,vacD:0,unpaidD:0,sickH:0,vacH:0,na:true};
-  var missed=missedWorkdays(emp,wp).length, hpd=hpdFor(emp);
-  var sickAvail=Math.max(0,Number(emp.sickDays)||0), vacAvail=Math.max(0,Number(emp.vacDays)||0);
-  var sickD=Math.min(missed,sickAvail), vacD=Math.min(missed-sickD,vacAvail), unpaidD=missed-sickD-vacD;
-  return {missedD:missed,sickD:sickD,vacD:vacD,unpaidD:unpaidD,sickH:sickD*hpd,vacH:vacD*hpd,na:false};
+  if(!c.dated) return {missedD:0,sickD:0,vacD:0,unpaidD:0,sickH:0,vacH:0,toSend:[],na:true};
+  var hpd=hpdFor(emp), lf=leftFor(emp), sickRem=lf.sick, vacRem=lf.vac;
+  var missed=missedWorkdays(emp,wp), sickD=0,vacD=0,unpaidD=0,toSend=[];
+  missed.forEach(function(iso){
+    var existing=portalOn()?portalEntryType(emp,iso):"";
+    if(existing==="S"){ sickD++; return; }          /* already logged in portal */
+    if(existing==="V"){ vacD++; return; }
+    if(sickRem>0){ sickRem--; sickD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"S"}); }
+    else if(vacRem>0){ vacRem--; vacD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"V"}); }
+    else unpaidD++;
+  });
+  return {missedD:missed.length,sickD:sickD,vacD:vacD,unpaidD:unpaidD,sickH:sickD*hpd,vacH:vacD*hpd,toSend:toSend,na:false};
 }
 window.onLeaveBal=function(empId,field,val){
   var emp=S.employees.filter(function(e){return e.id===empId;})[0]; if(!emp) return;
   var v=Number(val); emp[field]=(isFinite(v)&&v>=0)?v:0; persist();
   if(!(S.settings.weekPull&&S.settings.weekPull.applied)) renderWeekBox();
 };
+async function portalCall(qs,body){
+  var opt={ headers:{ "apikey":PORTAL_KEY, "Content-Type":"application/json" } };
+  if(body){ opt.method="POST"; opt.body=JSON.stringify(body); }
+  var r=await fetch(PORTAL_URL+qs,opt);
+  var j=null; try{ j=await r.json(); }catch(e){}
+  if(!r.ok) throw new Error((j&&j.error)||("Portal error "+r.status));
+  return j;
+}
+window.portalImport=async function(){
+  try{
+    var j=await portalCall("?action=summary");
+    var al={}; ((j&&j.allotments)||[]).forEach(function(a){ al[String(a.emp_id).toLowerCase()]={sick:Number(a.sick)||0,vac:Number(a.vac)||0}; });
+    var wp=S.settings.weekPull, yr=portalYear(wp), used={}, entries={};
+    ((j&&j.entries)||[]).forEach(function(e){
+      var pid=String(e.emp_id).toLowerCase(), dt=String(e.date), ty=String(e.type).toUpperCase().charAt(0);
+      if(!entries[pid]) entries[pid]={}; entries[pid][dt]=ty;
+      if(dt.slice(0,4)===yr){ if(!used[pid])used[pid]={S:0,V:0}; if(ty==="S")used[pid].S++; else if(ty==="V")used[pid].V++; }
+    });
+    S.settings.portal={ ts:new Date().toISOString(), year:yr, used:used, entries:entries };
+    S.employees.forEach(function(emp){ var a=al[portalIdFor(emp)]; if(a){ emp.sickAllot=a.sick; emp.vacAllot=a.vac; } });
+    persist(); renderReport();
+    alert("Imported from portal — allotments and "+(((j&&j.entries)||[]).length)+" leave day(s) (year "+yr+").");
+  }catch(e){ alert("Portal import failed: "+(e.message||e)); }
+};
+window.onPortalId=function(empId,val){ var emp=S.employees.filter(function(e){return e.id===empId;})[0]; if(!emp)return; emp.portalId=String(val||"").trim().toLowerCase(); persist(); renderWeekBox(); };
+window.onAllot=function(empId,field,val){
+  var emp=S.employees.filter(function(e){return e.id===empId;})[0]; if(!emp)return;
+  var v=Number(val); emp[field]=(isFinite(v)&&v>=0)?v:0; persist();
+  portalCall("?action=set-allot",{emp_id:portalIdFor(emp),sick:Number(emp.sickAllot)||0,vac:Number(emp.vacAllot)||0}).catch(function(){});
+  if(!(S.settings.weekPull&&S.settings.weekPull.applied)) renderWeekBox();
+};
+window.portalSendWeek=async function(){
+  var wp=S.settings.weekPull; if(!wp) return;
+  if(!portalOn()){ alert("Tap “Import from portal” first, so balances and already-logged days are known."); return; }
+  if(wp.applied){ alert("This week was already sent to the portal."); return; }
+  var send=[], lines=[], leave={};
+  S.employees.forEach(function(emp){ var a=leaveAllocFor(emp,wp); leave[emp.id]=a;
+    (a.toSend||[]).forEach(function(d){ send.push({emp_id:d.pid,date:d.date,type:d.type,note:"NTI payroll"}); });
+    if((a.toSend||[]).length) lines.push(lastName(emp.name)+": "+a.toSend.map(function(d){return (d.type==="S"?"sick ":"vac ")+d.date;}).join(", "));
+  });
+  if(!send.length){ alert("No new sick/vacation days to send for this week."); return; }
+  if(!confirm("Send these new leave days to the employee portal?\n\n"+lines.join("\n"))) return;
+  try{
+    var r=await portalCall("?action=add",{entries:send});
+    wp.leave=leave; wp.applied=true; persist();
+    await portalImport();
+    alert("Sent "+(r&&r.added!=null?r.added:send.length)+" day(s) to the portal.");
+  }catch(e){ alert("Send to portal failed: "+(e.message||e)); }
+};
+/* legacy (no-portal) balance deduction, kept as a fallback */
 window.applyLeaveToBalances=function(){
   var wp=S.settings.weekPull; if(!wp) return;
   if(wp.applied){ alert("This week's sick/vacation was already subtracted from the balances."); return; }
@@ -2119,9 +2194,13 @@ function renderWeekBox(){
       +'<td class="num">'+hrs(a.sickH)+'</td><td class="num">'+hrs(a.vacH)+'</td><td class="num">'+hrs(tot)+'</td></tr>';
   });
   var balRows=S.employees.map(function(emp){
+    var lf=leftFor(emp), u=usedFor(emp), pid=portalIdFor(emp);
     return '<tr><td>'+esc(emp.name)+'</td>'
-      +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.sickDays!=null?emp.sickDays:"")+'" onchange="onLeaveBal(\''+emp.id+'\',\'sickDays\',this.value)" style="width:72px;text-align:right"></td>'
-      +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.vacDays!=null?emp.vacDays:"")+'" onchange="onLeaveBal(\''+emp.id+'\',\'vacDays\',this.value)" style="width:72px;text-align:right"></td></tr>';
+      +'<td class="num"><input value="'+esc(pid)+'" onchange="onPortalId(\''+emp.id+'\',this.value)" style="width:50px;text-align:center"></td>'
+      +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.sickAllot!=null?emp.sickAllot:"")+'" onchange="onAllot(\''+emp.id+'\',\'sickAllot\',this.value)" style="width:58px;text-align:right"></td>'
+      +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.vacAllot!=null?emp.vacAllot:"")+'" onchange="onAllot(\''+emp.id+'\',\'vacAllot\',this.value)" style="width:58px;text-align:right"></td>'
+      +'<td class="num">'+(portalOn()?u.S:'–')+'</td><td class="num">'+(portalOn()?u.V:'–')+'</td>'
+      +'<td class="num"><b>'+lf.sick+'</b></td><td class="num"><b>'+lf.vac+'</b></td></tr>';
   }).join("");
   /* per-day clock detail so the numbers can be eyeballed against TimeStation */
   var allDays=weekAllDays(wp);
@@ -2144,10 +2223,11 @@ function renderWeekBox(){
     +(anyUnpaid?'<div class="footnote" style="margin-top:4px;color:var(--flag)">Some missed days are unpaid — sick and vacation balances are used up.</div>':'')
     +dailyHtml
     +'<div style="margin-top:10px"><div class="eyebrow" style="margin-bottom:4px">Additional notes for Tandem Tax</div><textarea id="weekNotes" rows="2" oninput="onWeekNotes(this.value)" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:8px" placeholder="Anything Avery should know this week — appears in the email.">'+esc(wp.notes||"")+'</textarea></div>'
-    +'<details style="margin-top:10px"'+(wp.applied?'':' open')+'><summary class="eyebrow" style="cursor:pointer">Leave balances (days remaining) — sick used first, then vacation</summary>'
-    +'<table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th><th class="num">Sick days</th><th class="num">Vac days</th></tr></thead><tbody>'+balRows+'</tbody></table>'
-    +'<div class="btnrow" style="margin-top:8px">'+(wp.applied?'<span class="footnote" style="color:var(--good)">✓ This week was subtracted from balances.</span>':'<button class="btn brass sm" onclick="applyLeaveToBalances()">Subtract this week\'s sick/vacation from balances</button>')+'</div>'
-    +'<p class="footnote" style="margin:6px 0 0">Auto-fills missed <b>Mon–Fri</b> days (no clock-in, not a holiday) as a full day at each person’s hours/day: sick first, then vacation; once both are gone the day is unpaid.</p>'
+    +'<details style="margin-top:10px" open><summary class="eyebrow" style="cursor:pointer">Employee portal — leave allotment / used / left</summary>'
+    +'<div class="btnrow" style="margin:6px 0;gap:8px"><button class="btn ghost sm" onclick="portalImport()">Import from portal</button>'
+    +(wp.applied?'<span class="footnote" style="color:var(--good)">✓ This week sent to portal.</span>':'<button class="btn brass sm" onclick="portalSendWeek()">Send this week’s sick/vacation to portal</button>')+'</div>'
+    +'<div style="overflow-x:auto"><table class="sumtbl mini"><thead><tr><th>Employee</th><th class="num">Portal&nbsp;ID</th><th class="num">Sick allot</th><th class="num">Vac allot</th><th class="num">Sick used</th><th class="num">Vac used</th><th class="num">Sick left</th><th class="num">Vac left</th></tr></thead><tbody>'+balRows+'</tbody></table></div>'
+    +'<p class="footnote" style="margin:6px 0 0">Enter each person’s yearly <b>allotment</b> (saved to the portal); <b>used</b> comes from the portal, <b>left</b> = allotment − used. Missed Mon–Fri days draw from <b>left</b> (sick first, then vacation). <b>Import</b> to refresh; <b>Send</b> writes this week’s new days back to the portal.'+(portalOn()?(' · Last import '+new Date(S.settings.portal.ts).toLocaleString()):' · Not imported yet.')+'</p>'
     +'</details>'
     +'</div>';
 }
