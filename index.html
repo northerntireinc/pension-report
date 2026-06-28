@@ -2097,17 +2097,15 @@ window.applyLeaveToBalances=function(){
   wp.leave=leave; wp.applied=true; persist(); renderReport();
 };
 function payrollWeekBody(){
-  var s=S.settings, wp=s.weekPull||{hours:{}}, L=[];
-  var W=[22,6,6,6,6,6,7];
-  function prow(c){ return c.map(function(v,i){ return i===0?rpad(v,W[0]):lpadx(v,W[i]); }).join(" | "); }
-  var DIV=W.map(function(w){ return Array(w+1).join("-"); }).join("-+-");
+  /* Labeled layout (no space-aligned columns) so it reads correctly in the
+     proportional font that iPhone Mail uses for plain-text bodies. */
+  var s=S.settings, wp=s.weekPull||{hours:{}}, L=[], allDays=weekAllDays(wp);
   L.push(s.employer+" — Weekly Payroll");
-  L.push(fmtFull(wp.start)+" – "+fmtFull(wp.end)+"   (paid the following Friday)");
+  L.push(fmtFull(wp.start)+" – "+fmtFull(wp.end)+" (paid the following Friday)");
   L.push("Prepared for Tandem Tax (Avery)");
   L.push("");
-  L.push(prow(["Employee","Reg","OT","DT","Sick","Vac","Total"]));
-  L.push(DIV);
-  var T={reg:0,ot:0,dt:0,sick:0,vac:0,tot:0}, n=0, clT=0, hasCl=false, undated=[], unpaid=[], cler=[];
+  L.push("===== HOURS BY EMPLOYEE =====");
+  var T={reg:0,ot:0,dt:0,sick:0,vac:0,tot:0}, n=0, clT=0, hasCl=false, undated=[], unpaid=[];
   S.employees.forEach(function(emp){
     var c=classifyEmpWeek(emp.id,wp), a=leaveAllocFor(emp,wp), cl=Number(emp.clericalWeekly)||0;
     var tot=c.total+a.sickH+a.vacH;
@@ -2115,43 +2113,35 @@ function payrollWeekBody(){
     n++; T.reg+=c.reg;T.ot+=c.ot;T.dt+=c.dt;T.sick+=a.sickH;T.vac+=a.vacH;T.tot+=tot;
     if(c.total>0 && !c.dated) undated.push(lastName(emp.name));
     if(a.unpaidD>0) unpaid.push(lastName(emp.name)+" ("+a.unpaidD+" day"+(a.unpaidD>1?"s":"")+")");
-    if(cl>0){ hasCl=true; clT+=cl; cler.push(lastName(emp.name)+" $"+money(cl)); }
     var tag=((emp.coverage||"union")==="mgmt")?" (mgmt)":"";
-    L.push(prow([emp.name+tag, hrs(c.reg), hrs(c.ot), hrs(c.dt), hrs(a.sickH), hrs(a.vacH), hrs(tot)]));
+    L.push("");
+    L.push(emp.name+tag+"  —  TOTAL "+hrs(tot)+" hrs");
+    var parts=["Reg "+hrs(c.reg)];
+    if(c.ot>0) parts.push("OT "+hrs(c.ot));
+    if(c.dt>0) parts.push("DT "+hrs(c.dt));
+    if(a.sickH>0) parts.push("Sick "+hrs(a.sickH));
+    if(a.vacH>0) parts.push("Vac "+hrs(a.vacH));
+    L.push("   "+parts.join("  ·  "));
+    var dm=(wp.days&&wp.days[emp.id])||{};
+    var dparts=allDays.map(function(iso){ var h=Number(dm[iso])||0; if(h<=0) return null; var d=parseD(iso); return (d?d.toLocaleDateString("en-US",{weekday:"short"}):iso)+" "+hrs(h); }).filter(Boolean);
+    if(dparts.length) L.push("   Daily:  "+dparts.join("  ·  "));
+    if(cl>0){ hasCl=true; clT+=cl; L.push("   + Clerical (non-pension wages): $"+money(cl)); }
   });
   if(!n) L.push("(no hours pulled for this week yet)");
-  L.push(DIV);
-  L.push(prow(["TOTALS", hrs(T.reg), hrs(T.ot), hrs(T.dt), hrs(T.sick), hrs(T.vac), hrs(T.tot)]));
   L.push("");
-  /* daily clock hours from TimeStation, so Avery can verify the totals */
-  var allDays=weekAllDays(wp);
-  var anyDaily=allDays.length && S.employees.some(function(e){ var dm=(wp.days&&wp.days[e.id])||{}; return Object.keys(dm).some(function(k){ return (Number(dm[k])||0)>0; }); });
-  if(anyDaily){
-    var DW=[20]; allDays.forEach(function(){ DW.push(6); });
-    var drow=function(c){ return c.map(function(v,i){ return i===0?rpad(v,DW[0]):lpadx(v,DW[i]); }).join(" | "); };
-    var DDIV=DW.map(function(w){ return Array(w+1).join("-"); }).join("-+-");
-    L.push("DAILY HOURS (TimeStation)");
-    L.push(drow(["Employee"].concat(allDays.map(function(iso){ var d=parseD(iso); return d?d.toLocaleDateString("en-US",{weekday:"short"})+" "+d.getDate():iso; }))));
-    L.push(DDIV);
-    S.employees.forEach(function(emp){
-      var dm=(wp.days&&wp.days[emp.id])||{};
-      if(!Object.keys(dm).some(function(k){ return (Number(dm[k])||0)>0; })) return;
-      L.push(drow([emp.name].concat(allDays.map(function(iso){ var h=Number(dm[iso])||0; return h>0?hrs(h):"-"; }))));
-    });
-    L.push("");
-  }
+  L.push("===== WEEK TOTALS =====");
+  L.push("Reg "+hrs(T.reg)+"  ·  OT "+hrs(T.ot)+"  ·  DT "+hrs(T.dt)+"  ·  Sick "+hrs(T.sick)+"  ·  Vac "+hrs(T.vac));
+  L.push("GRAND TOTAL:  "+hrs(T.tot)+" hrs");
+  if(hasCl) L.push("Total clerical (non-pension): $"+money(clT));
+  L.push("");
   var notes=[];
-  if(hasCl) notes.push("Clerical (straight wages, NOT pension/fringe): "+cler.join(", ")+" — total $"+money(clT));
   if(unpaid.length) notes.push("Unpaid missed days (sick & vacation used up): "+unpaid.join(", "));
   if(undated.length) notes.push("No daily detail for "+undated.join(", ")+" — shown as regular only; verify overtime.");
-  if(notes.length){ L.push("NOTES"); notes.forEach(function(x){ L.push("  - "+x); }); L.push(""); }
-  var boxW=58, inner=boxW-4, bar="+"+Array(boxW-1).join("-")+"+";
-  L.push("ADDITIONAL NOTES");
-  L.push(bar);
+  if(hasCl) notes.push("Clerical pay is straight wages and is NOT pension/fringe reportable.");
+  if(notes.length){ L.push("NOTES"); notes.forEach(function(x){ L.push("- "+x); }); L.push(""); }
+  L.push("===== ADDITIONAL NOTES =====");
   var un=(wp.notes||"").trim();
-  if(un){ un.split(/\n/).forEach(function(ln){ do{ L.push("| "+rpad(ln.slice(0,inner),inner)+" |"); ln=ln.slice(inner); }while(ln.length); }); }
-  else { L.push("| "+rpad("",inner)+" |"); L.push("| "+rpad("",inner)+" |"); }
-  L.push(bar);
+  L.push(un?un:"(none)");
   return L.join("\n");
 }
 window.emailPayrollWeek=function(){
