@@ -2010,8 +2010,8 @@ function portalOn(){ return !!(S.settings.portal && S.settings.portal.ts); }
 function portalYear(wp){ return (wp&&wp.end)?String(wp.end).slice(0,4):String(new Date().getFullYear()); }
 function usedFor(emp){ var p=S.settings.portal||{}; return (p.used&&p.used[portalIdFor(emp)])||{S:0,V:0}; }
 function leftFor(emp){
-  /* contract: 9 sick days/yr (reset each June). Default to 9 unless overridden. */
-  var sa=(emp.sickAllot!=null&&emp.sickAllot!=="")?Number(emp.sickAllot):9;
+  /* contract: every union employee gets 9 sick days/yr (resets June 1). Fixed. */
+  var sa=9;
   var va=(emp.vacAllot!=null&&emp.vacAllot!=="")?Number(emp.vacAllot):0;
   var u=portalOn()?usedFor(emp):{S:0,V:0};
   return { sick:Math.max(0,sa-(u.S||0)), vac:Math.max(0,va-(u.V||0)) };
@@ -2259,11 +2259,12 @@ function renderWeekBox(){
     var lf=leftFor(emp), u=usedFor(emp), pid=portalIdFor(emp);
     return '<tr><td>'+esc(emp.name)+'</td>'
       +'<td class="num"><input value="'+esc(pid)+'" onchange="onPortalId(\''+emp.id+'\',this.value)" style="width:50px;text-align:center"></td>'
-      +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.sickAllot!=null?emp.sickAllot:"")+'" onchange="onAllot(\''+emp.id+'\',\'sickAllot\',this.value)" style="width:58px;text-align:right"></td>'
+      +'<td class="num">9</td>'
       +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.vacAllot!=null?emp.vacAllot:"")+'" onchange="onAllot(\''+emp.id+'\',\'vacAllot\',this.value)" style="width:58px;text-align:right"></td>'
       +'<td class="num">'+(portalOn()?u.S:'–')+'</td><td class="num">'+(portalOn()?u.V:'–')+'</td>'
       +'<td class="num"><b>'+lf.sick+'</b></td><td class="num"><b>'+lf.vac+'</b></td></tr>';
   }).join("");
+  var payoutSummary=S.employees.map(function(emp){ var lf=leftFor(emp), pp=[]; if(lf.sick>0)pp.push(lf.sick+" sick ("+(lf.sick*8)+"h)"); if(lf.vac>0)pp.push(lf.vac+" vac ("+(lf.vac*8)+"h)"); return pp.length?(lastName(emp.name)+": "+pp.join(", ")):""; }).filter(Boolean).join(" · ");
   /* per-day clock detail so the numbers can be eyeballed against TimeStation */
   var allDays=weekAllDays(wp);
   var dHead=allDays.map(function(iso){ var dd=parseD(iso), lbl=dd?dd.toLocaleDateString("en-US",{weekday:"short",day:"numeric"}):iso, sun=dd&&dd.getDay()===0; return '<th class="num"'+(sun?' style="color:var(--flag)"':'')+'>'+esc(lbl)+'</th>'; }).join("");
@@ -2287,8 +2288,9 @@ function renderWeekBox(){
     +'<details style="margin-top:10px" open><summary class="eyebrow" style="cursor:pointer">Employee portal — leave allotment / used / left</summary>'
     +'<div class="btnrow" style="margin:6px 0;gap:8px"><button class="btn ghost sm" onclick="portalImport()">Import from portal</button>'
     +(wp.applied?'<span class="footnote" style="color:var(--good)">✓ This week sent to portal.</span>':'<button class="btn brass sm" onclick="portalSendWeek()">Send this week’s sick/vacation to portal</button>')+'</div>'
-    +'<div style="overflow-x:auto"><table class="sumtbl mini"><thead><tr><th>Employee</th><th class="num">Portal&nbsp;ID</th><th class="num">Sick allot</th><th class="num">Vac allot</th><th class="num">Sick used</th><th class="num">Vac used</th><th class="num">Sick left</th><th class="num">Vac left</th></tr></thead><tbody>'+balRows+'</tbody></table></div>'
-    +'<p class="footnote" style="margin:6px 0 0">Enter each person’s yearly <b>allotment</b> (saved to the portal); <b>used</b> comes from the portal, <b>left</b> = allotment − used. Missed Mon–Fri days draw from <b>left</b> (sick first, then vacation). <b>Import</b> to refresh; <b>Send</b> writes this week’s new days back to the portal.'+(portalOn()?(' · Last import '+new Date(S.settings.portal.ts).toLocaleString()):' · Not imported yet.')+'</p>'
+    +'<div style="overflow-x:auto"><table class="sumtbl mini"><thead><tr><th>Employee</th><th class="num">Portal&nbsp;ID</th><th class="num">Sick /yr</th><th class="num">Vac /yr</th><th class="num">Sick used</th><th class="num">Vac used</th><th class="num">Sick left</th><th class="num">Vac left</th></tr></thead><tbody>'+balRows+'</tbody></table></div>'
+    +'<p class="footnote" style="margin:6px 0 0"><b>Sick = 9/yr, fixed</b> (resets June 1). Enter each person’s yearly <b>vacation</b> (resets Jan 1). <b>Used</b> comes from the portal; <b>left</b> = allotment − used. Missed Mon–Fri days draw from <b>left</b> (sick first, then vacation). <b>Import</b> to refresh; <b>Send</b> writes new days to the portal.'+(portalOn()?(' · Last import '+new Date(S.settings.portal.ts).toLocaleString()):' · Not imported yet.')+'</p>'
+    +(payoutSummary?'<p class="footnote" style="margin:4px 0 0"><b>Year-end payout</b> (unused × 8 hrs — pay sick each June 1, vacation each Dec 31): '+esc(payoutSummary)+'</p>':'')
     +'</details>'
     +'</div>';
 }
