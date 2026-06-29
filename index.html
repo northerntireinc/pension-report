@@ -2215,6 +2215,16 @@ window.weekCopyTable=async function(){
     }
   }catch(e){ alert("Couldn’t copy: "+(e.message||e)); }
 };
+window.weekPrint=function(){
+  var wp=S.settings.weekPull; if(!wp||!wp.hours){ alert("Pull last week first (Shop Report tab)."); gotoTab("report"); return; }
+  var w=window.open("","_blank");
+  if(!w){ alert("Allow pop-ups for this site to print (or use Copy table and paste into a document)."); return; }
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Weekly Payroll</title>'
+    +'<style>body{font-family:Arial,Helvetica,sans-serif;margin:24px;color:#000}table{border-collapse:collapse}th,td{border:1px solid #999;padding:4px 8px}</style>'
+    +'</head><body>'+weekHTMLTable()+'</body></html>');
+  w.document.close(); w.focus();
+  setTimeout(function(){ try{ w.print(); }catch(e){} }, 350);
+};
 window.emailPayrollWeek=async function(){
   var wp=S.settings.weekPull;
   if(!wp||!wp.hours){ alert("Pull last week first (Shop Report tab)."); gotoTab("report"); return; }
@@ -2233,6 +2243,7 @@ function renderWeekBox(){
     +'<button id="btnPullWeek" class="btn brass" onclick="tsPullWeek()">1. Pull last week: '+fmtD(w.start)+'–'+fmtD(w.end)+'</button>'
     +'<button class="btn" onclick="weekCopyTable()">2. Copy table</button>'
     +'<button class="btn" onclick="emailPayrollWeek()">3. Email to Avery</button>'
+    +'<button class="btn ghost" onclick="weekPrint()">Print payroll</button>'
     +'</div>';
   if(!wp||!wp.hours){ box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'+stack+'<div class="footnote">Tap <b>1</b> to pull last week’s hours, then <b>2</b> Copy table and <b>3</b> Email to Avery.</div></div>'; return; }
   var stale=(wp.end!==w.end);
