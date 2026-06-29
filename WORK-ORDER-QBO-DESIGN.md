@@ -80,6 +80,29 @@ invoice_no · notes · created_at · email_sent · technician · invoiced_by
   the signed-in tenant's QuickBooks link.
 - The green→orange→blue/red step model and counts are per-tenant views of that tenant's data.
 
+## 6a. Schema migration — drop the person default
+
+The only backend change. Run this in the **work-order ("p2dt")** Supabase project, with that
+org connected — not from the pension repo. It removes the hardcoded `'Jeremy Forbes'` default so
+new rows default to empty:
+
+```sql
+-- new work orders no longer default to a person
+ALTER TABLE public.work_orders ALTER COLUMN technician DROP DEFAULT;
+ALTER TABLE public.work_orders ALTER COLUMN technician SET DEFAULT '';
+```
+
+Optional cleanup — only if existing rows were auto-stamped with the old default and were never
+actually assigned that tech. **Review first**; this is not reversible:
+
+```sql
+-- inspect before running the update
+SELECT id, customer, technician FROM public.work_orders WHERE technician = 'Jeremy Forbes';
+
+-- then, if those were just the default (not real assignments):
+UPDATE public.work_orders SET technician = '' WHERE technician = 'Jeremy Forbes';
+```
+
 ## 7. Port checklist
 
 - [ ] Drop in the shell tokens + step ribbon (3 colored cards, active = inset ring).
