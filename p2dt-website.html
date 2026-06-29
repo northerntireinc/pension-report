@@ -24,8 +24,7 @@
       [[ADDRESS]]        business mailing address (Stripe + many states want one)
       [[PHONE]]          optional support phone
       [[EFFECTIVE]]      effective date for the legal pages, e.g. "June 29, 2026"
-      [[PRICE_SINGLE]]   monthly price for a single app
-      [[PRICE_SUITE]]    monthly price for the full suite
+      [[PRICE_WO]]       monthly price for the Work Orders app (the one product for sale now)
       [[REFUND_WINDOW]]  e.g. "14 days"
   NOTE: support@prompted2dothis.com must actually receive mail — set up the
   forward at your domain registrar, or swap it for Rodneysaul@ipa.net.
@@ -83,6 +82,9 @@
   .app.a2{--c:var(--brass);--cs:var(--brass-soft)}
   .app.a3{--c:var(--blue);--cs:#e6eef6}
   .app.a4{--c:#7a4ca8;--cs:#efe7f6}
+  .app.soon{opacity:.72}
+  .badge-now{position:absolute;top:16px;right:16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--good);border-radius:999px;padding:3px 10px}
+  .badge-soon{position:absolute;top:16px;right:16px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:#ece8df;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
 
   .features{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:8px}
   @media (max-width:720px){.features{grid-template-columns:1fr}}
@@ -142,9 +144,10 @@
 <div class="hero wrap">
   <div class="eyebrow">Prompted2DoThis</div>
   <h1>Affordable software for niche businesses</h1>
-  <p class="lead">P2DT builds focused, no-nonsense web apps for the businesses big software ignores —
-  work orders that sync straight to QuickBooks, payroll &amp; fringe remittance, employee tools, and
-  tire tracking. Built for the people who actually do the work, priced so a small shop can afford it.</p>
+  <p class="lead">P2DT builds focused, no-nonsense web apps for the businesses big software ignores.
+  First up — <b>Work Orders</b>: write a work order like a QuickBooks invoice and push it to QuickBooks
+  Online in one tap. Built for the people who actually do the work, priced so a small shop can afford it.
+  More apps for niche businesses are on the way.</p>
   <div class="cta">
     <a class="btn brass" href="#pricing">See pricing</a>
     <a class="btn ghost" href="#contact">Get in touch</a>
@@ -159,24 +162,28 @@
     <p class="sub">Each app does one job well. Use one or use them all — they share the same clean, fast design.</p>
     <div class="apps">
       <div class="app a1">
+        <span class="badge-now">Available now</span>
         <div class="ic">🧾</div>
         <h3>Work Orders + QuickBooks</h3>
         <p>Write a work order like a QuickBooks invoice, then push it to QuickBooks Online in one tap. Customers, line items, and invoice numbers stay in sync.</p>
         <div class="tags"><span class="tag">QuickBooks</span><span class="tag">Invoicing</span></div>
       </div>
-      <div class="app a2">
+      <div class="app a2 soon">
+        <span class="badge-soon">Coming soon</span>
         <div class="ic">📋</div>
         <h3>Fringe &amp; Payroll Remittance</h3>
         <p>Turn worked hours into union fringe-benefit filings and a clean weekly payroll email — the monthly paperwork, done in minutes instead of a day.</p>
         <div class="tags"><span class="tag">Payroll</span><span class="tag">Reporting</span></div>
       </div>
-      <div class="app a3">
+      <div class="app a3 soon">
+        <span class="badge-soon">Coming soon</span>
         <div class="ic">👤</div>
         <h3>Employee Portal</h3>
         <p>A simple place for employees to see their hours, request time off, and keep their info current — without phone calls and sticky notes.</p>
         <div class="tags"><span class="tag">HR</span><span class="tag">Self-serve</span></div>
       </div>
-      <div class="app a4">
+      <div class="app a4 soon">
+        <span class="badge-soon">Coming soon</span>
         <div class="ic">🛞</div>
         <h3>Tire Tracker</h3>
         <p>Track tires by unit and position across a customer's fleet — installs, rotations, and replacements, all in one running record.</p>
@@ -206,27 +213,27 @@
 <section class="block" id="pricing">
   <div class="wrap">
     <div class="eyebrow">Pricing</div>
-    <h2>Straightforward, per shop</h2>
+    <h2>Straightforward, per business</h2>
     <p class="sub">Monthly subscription, billed securely through Stripe. Cancel anytime — see the
-      <a href="#refund">cancellation policy</a>. <span class="ph">[[adjust prices below]]</span></p>
+      <a href="#refund">cancellation policy</a>. <span class="ph">[[set the price below]]</span></p>
     <div class="prices">
-      <div class="price">
-        <div class="nm">Single App</div>
-        <div class="amt">$<span class="ph">[[PRICE_SINGLE]]</span><small>/mo</small></div>
-        <ul><li>Any one app</li><li>One shop / company</li><li>QuickBooks connection</li><li>Email support</li></ul>
-        <a class="btn ghost" href="#contact">Get started</a>
-      </div>
       <div class="price hot">
-        <div class="nm">Suite</div>
-        <div class="amt">$<span class="ph">[[PRICE_SUITE]]</span><small>/mo</small></div>
-        <ul><li>All apps included</li><li>One shop / company</li><li>QuickBooks connection</li><li>Priority email support</li></ul>
+        <div class="nm">Work Orders</div>
+        <div class="amt">$<span class="ph">[[PRICE_WO]]</span><small>/mo</small></div>
+        <ul><li>Unlimited work orders</li><li>One business / company</li><li>QuickBooks Online sync</li><li>Email support</li></ul>
         <a class="btn brass" href="#contact">Get started</a>
       </div>
       <div class="price">
         <div class="nm">Multi-location</div>
         <div class="amt">Let's talk</div>
-        <ul><li>Multiple shops</li><li>Volume pricing</li><li>Onboarding help</li><li>Direct support</li></ul>
+        <ul><li>Multiple locations</li><li>Volume pricing</li><li>Onboarding help</li><li>Direct support</li></ul>
         <a class="btn ghost" href="#contact">Contact us</a>
+      </div>
+      <div class="price">
+        <div class="nm">More apps</div>
+        <div class="amt" style="font-size:24px;color:var(--muted)">Coming soon</div>
+        <ul><li>Payroll &amp; fringe remittance</li><li>Employee portal</li><li>Tire tracker</li><li>Suite pricing later</li></ul>
+        <a class="btn ghost" href="#contact">Get notified</a>
       </div>
     </div>
   </div>
