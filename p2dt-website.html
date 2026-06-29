@@ -23,8 +23,8 @@
   >>> STILL TO FILL before publishing (search for "[[" ):
       [[ADDRESS]]        business mailing address (Stripe + many states want one)
       [[PHONE]]          optional support phone
-      [[PRICE_WO]]       monthly price for the Work Orders app (the one product for sale now)
-  (effective date June 29, 2026 and a 14-day refund window are already filled.)
+  (Price is managed in Stripe / the app and shown at signup, so it is intentionally
+   not hardcoded here. Effective date June 29, 2026 and a 14-day refund window are filled.)
   NOTE: Rodneysaul@ipa.net must actually receive mail — set up the
   forward at your domain registrar, or swap it for Rodneysaul@ipa.net.
   Legal text is a practical starting template, NOT legal advice — have it
@@ -213,14 +213,15 @@
   <div class="wrap">
     <div class="eyebrow">Pricing</div>
     <h2>Straightforward, per business</h2>
-    <p class="sub">Monthly subscription, billed securely through Stripe. Cancel anytime — see the
-      <a href="#refund">cancellation policy</a>. <span class="ph">[[set the price below]]</span></p>
+    <p class="sub">Start with a <b>14-day free trial</b>. After that it's a simple monthly subscription,
+      billed securely through Stripe — your price is shown when you sign up. Cancel anytime — see the
+      <a href="#refund">cancellation policy</a>.</p>
     <div class="prices">
       <div class="price hot">
         <div class="nm">Work Orders</div>
-        <div class="amt">$<span class="ph">[[PRICE_WO]]</span><small>/mo</small></div>
-        <ul><li>Unlimited work orders</li><li>One business / company</li><li>QuickBooks Online sync</li><li>Email support</li></ul>
-        <a class="btn brass" href="#contact">Get started</a>
+        <div class="amt" style="font-size:30px">14 days free<small>, then monthly</small></div>
+        <ul><li>Unlimited work orders</li><li>One business / company</li><li>QuickBooks Online sync</li><li>Email support</li><li>Cancel anytime</li></ul>
+        <a class="btn brass" href="#contact">Start free trial</a>
       </div>
       <div class="price">
         <div class="nm">Multi-location</div>
