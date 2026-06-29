@@ -51,4 +51,25 @@ synced dataset across users, this would need a backend (e.g. Supabase).
 - There is **no hours minimum** by default (fringes figured on actual hours). A floor or
   cap can be set on the Contract tab if a future agreement requires one.
 
+## Work Orders (`workorders.html`)
+
+A second standalone single-file app for writing up **shop work orders / service
+tickets** — separate from the remittance app, same no-build / localStorage pattern.
+
+- **Work Orders** — list of saved tickets with status filter (Open / In progress /
+  Completed / Paid / Void), search, and a running total of outstanding balances.
+- **Editor** — customer + vehicle details, line items for tires / parts / labor / fees
+  (per-line taxable toggle), automatic subtotal, tax, deposit, and balance-due math.
+- **Print** — a clean black-and-white work-order ticket (shop header, customer/vehicle,
+  itemized table, totals, signature line) sized to letter paper.
+- **Email / Copy** — open the customer's email pre-filled with the ticket, or copy a
+  plain-text version.
+- **Shop Setup** — shop name/address/phone/email, default sales-tax rate, default labor
+  rate, and the next auto-assigned WO number.
+- **Backup** — Export/Import the whole dataset as a JSON file to move it between devices.
+
+Tax applies to parts & tires by default (not labor); untick a line's **Tax** box to
+exclude it. All data is stored in the browser's localStorage on the device — same
+per-device / per-browser privacy model as the remittance app.
+
 _Private repository. Northern Tire, Inc._
