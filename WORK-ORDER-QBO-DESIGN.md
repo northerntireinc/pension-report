@@ -110,3 +110,56 @@ UPDATE public.work_orders SET technician = '' WHERE technician = 'Jeremy Forbes'
 - [ ] Open list = orange-railed cards with an `open` pill and a blue-outline "Create invoice → QBO" button.
 - [ ] Invoice step = read-only summary + blue-outlined QBO push (red accent) → write-back.
 - [ ] Bind the tenant name in the header; keep everything else tenant-agnostic.
+
+---
+
+## 8. Go-live — listing on the QuickBooks App Store
+
+To **sell** this app you list it on the QuickBooks App Store, which means passing Intuit's
+**three-part review: Technical → Security → Marketing.** You can't list until all three pass,
+and listed apps are **re-reviewed annually**. Build the items in §8.3 in *before* you call the
+app "done" — retrofitting them after a failed review is the slow path.
+
+### 8.1 The gate sequence
+
+1. **Production keys.** In the Intuit Developer portal, complete the **App Assessment
+   Questionnaire** + app details under **Production Settings**. That unlocks production OAuth
+   keys (the app currently runs on development keys).
+2. **Technical review (~20 days).** Validated against Intuit's **14 technical requirements**.
+3. **Security review (the long pole).** A real **security assessment — penetration test,
+   encryption checks, vulnerability scans.** You must remediate every **critical / high /
+   medium** finding in Intuit's written report before listing. Budget *weeks*, possibly a paid
+   third-party pentest. Multi-tenant apps are scrutinized hardest here.
+4. **Marketing review.** Listing assets: logo, screenshots, description, **support URL,
+   privacy policy, terms of service / EULA.**
+
+### 8.2 Timeline
+
+Technical review alone averages **~20 days**; security review + remediation adds weeks. Plan on
+roughly **1.5–3 months** from "feature complete" to "listed," dominated by security.
+
+### 8.3 Pre-submission checklist (build these in now)
+
+- [ ] **OAuth 2.0** with correct **token refresh** and **revocation** (we have `qbo_tokens`:
+      access / refresh / realm — verify refresh + revoke paths).
+- [ ] **Official "Connect to QuickBooks" button** using Intuit's branding assets — replace the
+      placeholder connection chip in the prototype.
+- [ ] **Disconnect flow + disconnect webhook** — handle the user disconnecting from either side;
+      stop calling their data on disconnect.
+- [ ] **Tenant isolation a pentest can't break** — RLS scoping every `work_orders` read/write by
+      tenant. *(Most likely thing to fail security review.)*
+- [ ] **Encrypt the QBO tokens at rest** — `qbo_tokens` per tenant, not plaintext columns.
+- [ ] **API error handling + throttle/retry** behavior.
+- [ ] **Production end-to-end test** against a real QBO company.
+- [ ] **Privacy policy + Terms of Service / EULA** pages (cheap to do early; required to list).
+
+### 8.4 Money note
+
+Most QuickBooks App Store apps **bill their own customers** (your own subscription / Stripe) —
+Intuit lists you, it does not run your billing. Confirm this on the developer portal **before**
+building a pricing flow, so you don't assume Intuit handles charging.
+
+**Sources:** Intuit Developer — [technical requirements](https://developer.intuit.com/app/developer/qbo/docs/go-live/publish-app/technical-requirements),
+[security requirements](https://developer.intuit.com/app/developer/qbo/docs/go-live/publish-app/security-requirements),
+[publishing requirements](https://developer.intuit.com/app/developer/qbo/docs/go-live/publish-app/platform-requirements),
+[what to expect during review](https://developer.intuit.com/app/developer/qbo/docs/go-live/list-on-the-app-store/what-to-expect-during-the-review).
