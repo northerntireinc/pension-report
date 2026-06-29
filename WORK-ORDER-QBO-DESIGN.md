@@ -82,9 +82,14 @@ invoice_no · notes · created_at · email_sent · technician · invoiced_by
 
 ## 6a. Schema migration — drop the person default
 
-The only backend change. Run this in the **work-order ("p2dt")** Supabase project, with that
-org connected — not from the pension repo. It removes the hardcoded `'Jeremy Forbes'` default so
-new rows default to empty:
+> **Not needed for the live p2dt app.** Verified against the real `ai-work-orders` project:
+> `work_orders.technician` **already defaults to `''`**, and technicians are managed in a
+> per-tenant `technicians` table (with an `is_default` flag). The hardcoded `'Jeremy Forbes'`
+> default only existed in the older standalone `nti work orders` project. The SQL below is kept
+> **only** as reference for that old project — do **not** run it against p2dt.
+
+If you ever do need it on a project that still carries the person default, run this in that
+Supabase project (with its org connected):
 
 ```sql
 -- new work orders no longer default to a person
