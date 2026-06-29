@@ -192,7 +192,7 @@
   <div class="wrap">
     <div>
       <!-- multi-tenant: this name/logo swaps per signed-in tenant; the shell stays identical -->
-      <h1 id="tenantName">Northern Tire, Inc.</h1>
+      <h1 id="tenantName">Your Company</h1>
       <div class="sub">Work Orders &amp; QuickBooks</div>
     </div>
     <div class="qbchip" id="qbChip"><span class="dot"></span>QuickBooks&nbsp;<b>Connected</b></div>
@@ -243,12 +243,9 @@
         <input type="date" id="f_date">
       </div>
       <div class="field">
-        <label>Technician</label>
-        <select id="f_tech">
-          <option>Jeremy Forbes</option>
-          <option>Rodney Saul</option>
-          <option>Shop</option>
-        </select>
+        <label>Technician <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <input type="text" id="f_tech" list="techs" placeholder="Assign a technician…" autocomplete="off">
+        <datalist id="techs"></datalist>
       </div>
     </div>
 
@@ -335,20 +332,20 @@ function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e)
 
 function seed(){
   S.workOrders=[
-    { id:woId(), date:"2026-06-24", customer:"Carmeuse Lime & Stone", technician:"Jeremy Forbes",
+    { id:woId(), date:"2026-06-24", customer:"Riverside Aggregates", technician:"Tech A",
       status:"open", invoice_no:"", notes:"", email_sent:false, invoiced_by:"", created_at:Date.now()-86400000*4,
       lines:[
         {item:"Tire — Loader 23.5R25", desc:"Front left, mount & balance", qty:2, rate:1240.00},
         {item:"Service call", desc:"On-site, 1 hr", qty:1, rate:135.00}
       ]},
-    { id:woId(), date:"2026-06-26", customer:"City of Ironton — Fleet", technician:"Rodney Saul",
+    { id:woId(), date:"2026-06-26", customer:"City Fleet Services", technician:"Tech B",
       status:"open", invoice_no:"", notes:"PO #4471", email_sent:false, invoiced_by:"", created_at:Date.now()-86400000*2,
       lines:[
         {item:"Tire — LT265/70R17", desc:"Set of 4, road hazard", qty:4, rate:212.50},
         {item:"Alignment", desc:"4-wheel", qty:1, rate:99.00}
       ]},
-    { id:woId(), date:"2026-06-12", customer:"Tri-State Trucking", technician:"Jeremy Forbes",
-      status:"invoiced", invoice_no:"1042", email_sent:true, invoiced_by:"Rodney Saul", notes:"", created_at:Date.now()-86400000*16,
+    { id:woId(), date:"2026-06-12", customer:"Tri-State Trucking", technician:"Tech A",
+      status:"invoiced", invoice_no:"1042", email_sent:true, invoiced_by:"Front office", notes:"", created_at:Date.now()-86400000*16,
       lines:[ {item:"Tire — 11R22.5 Drive", desc:"Recap, 8 ea", qty:8, rate:289.00} ]}
   ];
   persist();
@@ -402,7 +399,7 @@ window.delLine=function(i){ draftLines.splice(i,1); if(!draftLines.length) draft
 window.clearLines=function(){ draftLines=[newDraftLine()]; renderLines(); };
 
 function resetForm(){
-  el("f_customer").value=""; el("f_tech").value="Jeremy Forbes"; el("f_notes").value="";
+  el("f_customer").value=""; el("f_tech").value=""; el("f_notes").value="";
   el("f_date").value=today(); draftLines=[newDraftLine(),newDraftLine()]; renderLines();
 }
 function today(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -486,7 +483,7 @@ window.createInvoice=function(id){
   // WIRE: in the real app -> mcp/QBO create invoice, then Supabase update:
   //   status='invoiced', invoice_no=<from QBO>, invoiced_by=<current user>, email_sent per send
   var num=String(1043+S.workOrders.filter(function(w){return w.status==="invoiced";}).length); // demo number
-  wo.status="invoiced"; wo.invoice_no=num; wo.invoiced_by="Rodney Saul";
+  wo.status="invoiced"; wo.invoice_no=num; wo.invoiced_by="Current user"; // WIRE: real signed-in user
   persist(); refreshCounts(); selectedId=null;
   toast("Invoice #"+num+" created in QuickBooks","inv");
   go(2);
@@ -504,10 +501,12 @@ el("f_date").value=today();
 draftLines=[newDraftLine(),newDraftLine()];
 renderLines();
 refreshCounts();
-// seed customer suggestions
+// suggestions come only from existing data — no hardcoded customers or technicians
 (function(){
-  var names=Array.from(new Set(S.workOrders.map(function(w){return w.customer;})));
-  el("customers").innerHTML=names.map(function(n){return '<option value="'+esc(n)+'">';}).join("");
+  var cust=Array.from(new Set(S.workOrders.map(function(w){return w.customer;}).filter(Boolean)));
+  el("customers").innerHTML=cust.map(function(n){return '<option value="'+esc(n)+'">';}).join("");
+  var techs=Array.from(new Set(S.workOrders.map(function(w){return w.technician;}).filter(Boolean)));
+  el("techs").innerHTML=techs.map(function(n){return '<option value="'+esc(n)+'">';}).join("");
 })();
 </script>
 </body>

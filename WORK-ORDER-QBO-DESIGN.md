@@ -69,6 +69,10 @@ invoice_no · notes · created_at · email_sent · technician · invoiced_by
 
 ## 6. Multi-tenant notes
 
+- The app is **not tied to any one company or person.** No tenant name, customer, or technician
+  is hardcoded or used as a default — `technician` is an optional free-text field, and all
+  suggestions come from that tenant's own data. (Drop the `'Jeremy Forbes'` default on
+  `work_orders.technician` in the live schema; let it default to empty.)
 - The header **tenant name/logo** is the only per-tenant chrome — swap it on sign-in; the step
   flow and entry grid are identical for every tenant.
 - Scope every `work_orders` read/write by tenant (RLS / `tenant_id`); the QBO connection
