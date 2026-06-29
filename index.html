@@ -2019,6 +2019,7 @@ function leftFor(emp){
 function portalEntryType(emp,iso){ var p=S.settings.portal||{}; var e=(p.entries&&p.entries[portalIdFor(emp)])||{}; return e[iso]||""; }
 function leaveAllocFor(emp,wp){
   if(wp&&wp.applied&&wp.leave&&wp.leave[emp.id]) return wp.leave[emp.id];   /* frozen once applied */
+  if(emp.type==="salaried") return {missedD:0,sickD:0,vacD:0,unpaidD:0,sickH:0,vacH:0,toSend:[],na:true};  /* salary: no sick/vacation */
   var c=classifyEmpWeek(emp.id,wp);
   if(!c.dated) return {missedD:0,sickD:0,vacD:0,unpaidD:0,sickH:0,vacH:0,toSend:[],na:true};
   var hpd=hpdFor(emp), lf=leftFor(emp), sickRem=lf.sick, vacRem=lf.vac;
@@ -2260,7 +2261,7 @@ function renderWeekBox(){
       +'<td class="num">'+hrs(c.reg)+'</td><td class="num">'+hrs(c.ot)+'</td><td class="num">'+hrs(c.dt)+'</td>'
       +'<td class="num">'+hrs(a.sickH)+'</td><td class="num">'+hrs(a.vacH)+'</td><td class="num">'+hrs(tot)+'</td></tr>';
   });
-  var balRows=S.employees.map(function(emp){
+  var balRows=S.employees.filter(function(emp){return emp.type!=="salaried";}).map(function(emp){
     var lf=leftFor(emp), u=usedFor(emp), pid=portalIdFor(emp);
     return '<tr><td>'+esc(emp.name)+'</td>'
       +'<td class="num"><input value="'+esc(pid)+'" onchange="onPortalId(\''+emp.id+'\',this.value)" style="width:50px;text-align:center"></td>'
@@ -2269,7 +2270,7 @@ function renderWeekBox(){
       +'<td class="num">'+(portalOn()?u.S:'–')+'</td><td class="num">'+(portalOn()?u.V:'–')+'</td>'
       +'<td class="num"><b>'+lf.sick+'</b></td><td class="num"><b>'+lf.vac+'</b></td></tr>';
   }).join("");
-  var payoutSummary=S.employees.map(function(emp){ var lf=leftFor(emp), pp=[]; if(lf.sick>0)pp.push(lf.sick+" sick ("+(lf.sick*8)+"h)"); if(lf.vac>0)pp.push(lf.vac+" vac ("+(lf.vac*8)+"h)"); return pp.length?(lastName(emp.name)+": "+pp.join(", ")):""; }).filter(Boolean).join(" · ");
+  var payoutSummary=S.employees.filter(function(emp){return emp.type!=="salaried";}).map(function(emp){ var lf=leftFor(emp), pp=[]; if(lf.sick>0)pp.push(lf.sick+" sick ("+(lf.sick*8)+"h)"); if(lf.vac>0)pp.push(lf.vac+" vac ("+(lf.vac*8)+"h)"); return pp.length?(lastName(emp.name)+": "+pp.join(", ")):""; }).filter(Boolean).join(" · ");
   /* per-day clock detail so the numbers can be eyeballed against TimeStation */
   var allDays=weekAllDays(wp);
   var dHead=allDays.map(function(iso){ var dd=parseD(iso), lbl=dd?dd.toLocaleDateString("en-US",{weekday:"short",day:"numeric"}):iso, sun=dd&&dd.getDay()===0; return '<th class="num"'+(sun?' style="color:var(--flag)"':'')+'>'+esc(lbl)+'</th>'; }).join("");
@@ -2283,6 +2284,7 @@ function renderWeekBox(){
   /* manual per-day override: pay a missed weekday as Sick / Vacation / Unpaid */
   var ovAll=wp.leaveOverride||{}, assignRows="";
   S.employees.forEach(function(emp){
+    if(emp.type==="salaried") return;
     var md=missedWorkdays(emp,wp); if(!md.length) return;
     var ov=ovAll[emp.id]||{};
     md.forEach(function(iso){
