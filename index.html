@@ -2247,10 +2247,11 @@ function renderWeekBox(){
     +'</div>';
   if(!wp||!wp.hours){ box.innerHTML='<div class="payrow" style="flex-direction:column;align-items:stretch">'+stack+'<div class="footnote">Tap <b>1</b> to pull last week’s hours, then <b>2</b> Copy table and <b>3</b> Email to Avery.</div></div>'; return; }
   var stale=(wp.end!==w.end);
-  /* gather the distinct dates worked, to offer holiday toggles */
-  var dateSet={};
-  if(wp.days) Object.keys(wp.days).forEach(function(eid){ var dd=wp.days[eid]||{}; Object.keys(dd).forEach(function(iso){ if((Number(dd[iso])||0)>0) dateSet[iso]=true; }); });
-  var dates=Object.keys(dateSet).sort();
+
+  /* offer EVERY day of the pulled week as a holiday toggle — a holiday is usually a
+     day nobody clocked in, e.g. Fri 7/3 for observed July 4 */
+  var dates=weekAllDays(wp);
+
   var holHtml="";
   if(dates.length){
     holHtml='<div class="footnote" style="margin:8px 0 4px">Double-time days (2×): Sundays are automatic — tick any holiday worked:</div>'
