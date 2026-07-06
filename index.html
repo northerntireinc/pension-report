@@ -2111,14 +2111,21 @@ window.applyLeaveToBalances=function(){
   S.employees.forEach(function(emp){ var a=leave[emp.id]; emp.sickDays=Math.max(0,(Number(emp.sickDays)||0)-a.sickD); emp.vacDays=Math.max(0,(Number(emp.vacDays)||0)-a.vacD); });
   wp.leave=leave; wp.applied=true; persist(); renderReport();
 };
+function holidayHoursFor(emp,wp){
+  if(emp.type==="salaried") return 0;
+  var hols=(wp&&wp.holidays)?Object.keys(wp.holidays):[], n=0;
+  hols.forEach(function(iso){ var d=parseD(iso); if(d&&d.getDay()!==0) n++; });
+  return n*8;   /* 8 straight holiday hours per ticked holiday, every hourly employee */
+}
 function weekData(wp){
-  var emps=[], T={reg:0,ot:0,dt:0,sick:0,vac:0,tot:0,cl:0}, hasCl=false, undated=[], unpaid=[];
+  var emps=[], T={reg:0,ot:0,dt:0,hol:0,sick:0,vac:0,tot:0,cl:0}, hasCl=false, undated=[], unpaid=[];
   S.employees.forEach(function(emp){
     var c=classifyEmpWeek(emp.id,wp), a=leaveAllocFor(emp,wp), cl=Number(emp.clericalWeekly)||0;
-    var tot=c.total+a.sickH+a.vacH;
+    var hol=holidayHoursFor(emp,wp);
+    var tot=c.total+hol+a.sickH+a.vacH;
     if(tot<=0 && cl<=0) return;
-    emps.push({full:lastName(emp.name), short:lastName(emp.name).slice(0,9), reg:c.reg,ot:c.ot,dt:c.dt,sick:a.sickH,vac:a.vacH,tot:tot,cl:cl,id:emp.id});
-    T.reg+=c.reg;T.ot+=c.ot;T.dt+=c.dt;T.sick+=a.sickH;T.vac+=a.vacH;T.tot+=tot;T.cl+=cl;
+    emps.push({full:lastName(emp.name), short:lastName(emp.name).slice(0,9), reg:c.reg,ot:c.ot,dt:c.dt,hol:hol,sick:a.sickH,vac:a.vacH,tot:tot,cl:cl,id:emp.id});
+    T.reg+=c.reg;T.ot+=c.ot;T.dt+=c.dt;T.hol+=hol;T.sick+=a.sickH;T.vac+=a.vacH;T.tot+=tot;T.cl+=cl;
     if(c.total>0 && !c.dated) undated.push(lastName(emp.name));
     if(a.unpaidD>0) unpaid.push(lastName(emp.name)+" ("+a.unpaidD+" day"+(a.unpaidD>1?"s":"")+")");
     if(cl>0) hasCl=true;
@@ -2144,6 +2151,7 @@ function payrollWeekBody(){
     L.push(rowL("Reg",     emps.map(function(e){ return hrs(e.reg); })));
     L.push(rowL("OT 1.5x", emps.map(function(e){ return hrs(e.ot); })));
     L.push(rowL("DT 2x",   emps.map(function(e){ return hrs(e.dt); })));
+    L.push(rowL("Hol",     emps.map(function(e){ return hrs(e.hol); })));
     L.push(rowL("Sick",    emps.map(function(e){ return hrs(e.sick); })));
     L.push(rowL("Vac",     emps.map(function(e){ return hrs(e.vac); })));
     L.push(rowL("TOTAL",   emps.map(function(e){ return hrs(e.tot); })));
@@ -2169,9 +2177,9 @@ window.weekCSV=function(){
   R.push([(S.settings.employer||"NTI")+" — Weekly Payroll"]);
   R.push(["Week", fmtD(wp.start)+" to "+fmtD(wp.end)]);
   R.push([]);
-  R.push(["Employee","Reg","OT 1.5x","DT 2x","Sick","Vac","Total","Clerical $"]);
-  d.emps.forEach(function(e){ R.push([e.full,hrs(e.reg),hrs(e.ot),hrs(e.dt),hrs(e.sick),hrs(e.vac),hrs(e.tot), e.cl>0?money(e.cl):""]); });
-  R.push(["TOTALS",hrs(d.T.reg),hrs(d.T.ot),hrs(d.T.dt),hrs(d.T.sick),hrs(d.T.vac),hrs(d.T.tot), d.T.cl>0?money(d.T.cl):""]);
+  R.push(["Employee","Reg","OT 1.5x","DT 2x","Hol","Sick","Vac","Total","Clerical $"]);
+  d.emps.forEach(function(e){ R.push([e.full,hrs(e.reg),hrs(e.ot),hrs(e.dt),hrs(e.hol),hrs(e.sick),hrs(e.vac),hrs(e.tot), e.cl>0?money(e.cl):""]); });
+  R.push(["TOTALS",hrs(d.T.reg),hrs(d.T.ot),hrs(d.T.dt),hrs(d.T.hol),hrs(d.T.sick),hrs(d.T.vac),hrs(d.T.tot), d.T.cl>0?money(d.T.cl):""]);
   R.push([]);
   R.push(["Daily hours (TimeStation)"]);
   R.push(["Employee"].concat(allDays.map(function(iso){ var x=parseD(iso); return x?x.toLocaleDateString("en-US",{weekday:"short"})+" "+x.getDate():iso; })));
@@ -2187,7 +2195,7 @@ function weekHTMLTable(){
   H+='<p><b>'+esc(S.settings.employer||"Northern Tire")+' — Weekly Payroll</b><br>'+esc(fmtD(wp.start)+' to '+fmtD(wp.end))+' (paid the following Friday)<br>For Tandem Tax (Avery)</p>';
   H+='<p style="margin:8px 0 2px"><b>Hours by type</b></p><table style="border-collapse:collapse">';
   H+='<tr><th '+tdl.replace("text-align:left","text-align:left;background:#eee")+'>Type</th>'+d.emps.map(function(e){ return '<th '+th+'>'+esc(e.full)+'</th>'; }).join("")+'</tr>';
-  [["Reg","reg"],["OT 1.5x","ot"],["DT 2x","dt"],["Sick","sick"],["Vac","vac"],["TOTAL","tot"]].forEach(function(rw){
+  [["Reg","reg"],["OT 1.5x","ot"],["DT 2x","dt"],["Hol","hol"],["Sick","sick"],["Vac","vac"],["TOTAL","tot"]].forEach(function(rw){
     H+='<tr><td '+tdl+'><b>'+rw[0]+'</b></td>'+d.emps.map(function(e){ return '<td '+td+'>'+hrs(e[rw[1]])+'</td>'; }).join("")+'</tr>';
   });
   H+='</table>';
@@ -2254,7 +2262,7 @@ function renderWeekBox(){
 
   var holHtml="";
   if(dates.length){
-    holHtml='<div class="footnote" style="margin:8px 0 4px">Double-time days (2×): Sundays are automatic — tick any holiday worked:</div>'
+    holHtml='<div class="footnote" style="margin:8px 0 4px">Holidays: tick any paid holiday — adds <b>8 hrs holiday pay</b> to every hourly employee and stops it counting as a sick day. Sundays are automatic double-time if worked.</div>'
       +'<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:4px">';
     dates.forEach(function(iso){
       var d=parseD(iso), dow=d?d.getDay():-1, nm=d?d.toLocaleDateString("en-US",{weekday:"short",month:"numeric",day:"numeric"}):iso;
@@ -2263,15 +2271,17 @@ function renderWeekBox(){
     });
     holHtml+='</div>';
   }
-  var rows="", T={reg:0,ot:0,dt:0,sick:0,vac:0,tot:0}, anyUndated=false, anyUnpaid=false;
+  var rows="", T={reg:0,ot:0,dt:0,hol:0,sick:0,vac:0,tot:0}, anyUndated=false, anyUnpaid=false;
   S.employees.forEach(function(emp){
-    var c=classifyEmpWeek(emp.id,wp), a=leaveAllocFor(emp,wp), tot=c.total+a.sickH+a.vacH;
+    var c=classifyEmpWeek(emp.id,wp), a=leaveAllocFor(emp,wp), hol=holidayHoursFor(emp,wp), tot=c.total+hol+a.sickH+a.vacH;
     if(tot<=0) return;
-    T.reg+=c.reg;T.ot+=c.ot;T.dt+=c.dt;T.sick+=a.sickH;T.vac+=a.vacH;T.tot+=tot;
+    T.reg+=c.reg;T.ot+=c.ot;T.dt+=c.dt;T.hol+=hol;T.sick+=a.sickH;T.vac+=a.vacH;T.tot+=tot;
     if(!c.dated)anyUndated=true; if(a.unpaidD>0)anyUnpaid=true;
     rows+='<tr><td>'+esc(emp.name)+(c.dated?'':' <span class="footnote" style="color:var(--flag)">*</span>')+(a.unpaidD>0?' <span class="pill floor">'+a.unpaidD+' unpaid</span>':'')+'</td>'
       +'<td class="num">'+hrs(c.reg)+'</td><td class="num">'+hrs(c.ot)+'</td><td class="num">'+hrs(c.dt)+'</td>'
+      +'<td class="num">'+hrs(hol)+'</td>'
       +'<td class="num">'+hrs(a.sickH)+'</td><td class="num">'+hrs(a.vacH)+'</td><td class="num">'+hrs(tot)+'</td></tr>';
+  });
   });
   var balRows=S.employees.filter(function(emp){return emp.type!=="salaried";}).map(function(emp){
     var lf=leftFor(emp), u=usedFor(emp), pid=portalIdFor(emp);
@@ -2311,8 +2321,7 @@ function renderWeekBox(){
     +stack
     +'<div class="prtsum" style="margin-bottom:6px">Pulled: '+fmtD(wp.start)+' – '+fmtD(wp.end)+(stale?' <span class="pill floor">older than last week — tap 1 to re-pull</span>':'')+'</div>'
     +holHtml
-    +'<table class="sumtbl mini" style="margin-top:6px"><thead><tr><th>Employee</th><th class="num">Reg</th><th class="num">OT 1.5×</th><th class="num">DT 2×</th><th class="num">Sick</th><th class="num">Vac</th><th class="num">Total</th></tr></thead><tbody>'+rows+'</tbody>'
-    +'<tfoot><tr><td>Total</td><td class="num">'+hrs(T.reg)+'</td><td class="num">'+hrs(T.ot)+'</td><td class="num">'+hrs(T.dt)+'</td><td class="num">'+hrs(T.sick)+'</td><td class="num">'+hrs(T.vac)+'</td><td class="num">'+hrs(T.tot)+'</td></tr></tfoot></table>'
+    +'<table class="sumtbl mini"
     +(anyUndated?'<div class="footnote" style="margin-top:6px;color:var(--flag)">* No daily clock detail — shown as regular only; no auto sick/vacation applied. Re-pull or check by hand.</div>':'')
     +(anyUnpaid?'<div class="footnote" style="margin-top:4px;color:var(--flag)">Some missed days are unpaid — sick and vacation balances are used up.</div>':'')
     +dailyHtml
