@@ -2010,7 +2010,7 @@ function portalOn(){ return !!(S.settings.portal && S.settings.portal.ts); }
 function portalYear(wp){ return (wp&&wp.end)?String(wp.end).slice(0,4):String(new Date().getFullYear()); }
 function usedFor(emp){ var p=S.settings.portal||{}; return (p.used&&p.used[portalIdFor(emp)])||{S:0,V:0}; }
 function leftFor(emp){
-  /* contract: every union employee gets 9 sick days/yr (resets June 1). Fixed. */
+  /* contract: every union employee gets 5 sick days/yr (resets June 1). Fixed. */
   var sa=5;
   var va=(emp.vacAllot!=null&&emp.vacAllot!=="")?Number(emp.vacAllot):0;
   var u=portalOn()?usedFor(emp):{S:0,V:0};
