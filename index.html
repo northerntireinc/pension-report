@@ -2282,7 +2282,7 @@ function renderWeekBox(){
       +'<td class="num">'+hrs(hol)+'</td>'
       +'<td class="num">'+hrs(a.sickH)+'</td><td class="num">'+hrs(a.vacH)+'</td><td class="num">'+hrs(tot)+'</td></tr>';
   });
-  });
+  
   var balRows=S.employees.filter(function(emp){return emp.type!=="salaried";}).map(function(emp){
     var lf=leftFor(emp), u=usedFor(emp), pid=portalIdFor(emp);
     return '<tr><td>'+esc(emp.name)+'</td>'
