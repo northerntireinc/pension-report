@@ -2071,7 +2071,7 @@ window.portalImport=async function(){
     S.settings.portal={ ts:new Date().toISOString(), sickStart:sickStart, vacStart:vacStart, used:used, entries:entries };
     S.employees.forEach(function(emp){ var a=al[portalIdFor(emp)]; if(a){ emp.sickAllot=a.sick; emp.vacAllot=a.vac; } });
     persist(); renderReport();
-    alert("Imported from portal — allotments and "+(((j&&j.entries)||[]).length)+" leave day(s) (year "+yr+").");
+    alert("Imported from portal — allotments and "+(((j&&j.entries)||[]).length)+" leave day(s) (year "+ry+").");
   }catch(e){ alert("Portal import failed: "+(e.message||e)); }
 };
 window.onPortalId=function(empId,val){ var emp=S.employees.filter(function(e){return e.id===empId;})[0]; if(!emp)return; emp.portalId=String(val||"").trim().toLowerCase(); persist(); renderWeekBox(); };
