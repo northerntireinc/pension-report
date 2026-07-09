@@ -2023,21 +2023,21 @@ function leaveAllocFor(emp,wp){
   var c=classifyEmpWeek(emp.id,wp);
   if(!c.dated) return {missedD:0,sickD:0,vacD:0,unpaidD:0,sickH:0,vacH:0,toSend:[],na:true};
   var hpd=hpdFor(emp), lf=leftFor(emp), sickRem=lf.sick, vacRem=lf.vac;
-  var missed=missedWorkdays(emp,wp), sickD=0,vacD=0,unpaidD=0,toSend=[];
+  var missed=missedWorkdays(emp,wp), sickD=0,vacD=0,unpaidD=0,toSend=[],skipped=[];
   var ov=(wp.leaveOverride&&wp.leaveOverride[emp.id])||{};
   missed.forEach(function(iso){
     var man=ov[iso]||"";                              /* manual override wins */
-    if(man==="U"){ unpaidD++; return; }
+    if(man==="U"){ unpaidD++; skipped.push({iso:iso,reason:"set to Unpaid"}); return; }
     if(man==="S"){ sickD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"S"}); return; }
     if(man==="V"){ vacD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"V"}); return; }
     var existing=portalOn()?portalEntryType(emp,iso):"";
-    if(existing==="S"){ sickD++; return; }          /* already logged in portal */
-    if(existing==="V"){ vacD++; return; }
+    if(existing==="S"){ sickD++; skipped.push({iso:iso,reason:"already in the portal as sick"}); return; }
+    if(existing==="V"){ vacD++; skipped.push({iso:iso,reason:"already in the portal as vacation"}); return; }
     if(sickRem>0){ sickRem--; sickD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"S"}); }
     else if(vacRem>0){ vacRem--; vacD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"V"}); }
-    else unpaidD++;
+    else { unpaidD++; skipped.push({iso:iso,reason:"no sick or vacation balance left (unpaid)"}); }
   });
-  return {missedD:missed.length,sickD:sickD,vacD:vacD,unpaidD:unpaidD,sickH:sickD*hpd,vacH:vacD*hpd,toSend:toSend,na:false};
+  return {missedD:missed.length,sickD:sickD,vacD:vacD,unpaidD:unpaidD,sickH:sickD*hpd,vacH:vacD*hpd,toSend:toSend,skipped:skipped,na:false};
 }
 window.onLeaveBal=function(empId,field,val){
   var emp=S.employees.filter(function(e){return e.id===empId;})[0]; if(!emp) return;
@@ -2090,7 +2090,11 @@ window.portalSendWeek=async function(){
     (a.toSend||[]).forEach(function(d){ send.push({emp_id:d.pid,date:d.date,type:d.type,note:"NTI payroll"}); });
     if((a.toSend||[]).length) lines.push(lastName(emp.name)+": "+a.toSend.map(function(d){return (d.type==="S"?"sick ":"vac ")+d.date;}).join(", "));
   });
-  if(!send.length){ alert("No new sick/vacation days to send for this week."); return; }
+  if(!send.length){
+    var why=[];
+    S.employees.forEach(function(emp){ var a=leave[emp.id]||{}; (a.skipped||[]).forEach(function(sk){ why.push(lastName(emp.name)+" "+sk.iso+": "+sk.reason); }); });
+    alert("No new days to send.\n\nWhy each missed day was skipped:\n"+(why.length?why.join("\n"):"(no missed weekdays found for this week)")); return;
+  }
   if(!confirm("Send these new leave days to the employee portal?\n\n"+lines.join("\n"))) return;
   try{
     var r=await portalCall("?action=add",{entries:send});
