@@ -2489,8 +2489,8 @@ window.formP1=function(cov,title){
   });
   var grand=g.t.total+grandAdj;
   /* swap the original tbody + grand total into the produced HTML */
-  html=html.replace(/(<table class="remt">[\s\S]*?<tbody>)[\s\S]*?(<\/tbody>)/, '$1'+remit+'$2');
-  html=html.replace(/(class="rt grt">)\$[\d,]+\.\d2(<\/td>)/, '$1$'+money(grand)+'$2');
+  html=html.replace(/(<table class="remt">[\s\S]*?<tbody>)[\s\S]*?(<\/tbody>)/, function(_m,p1,p2){ return p1+remit+p2; });
+  html=html.replace(/(class="rt grt">)\$[\d,]+\.\d\d(<\/td>)/, function(_m,p1,p2){ return p1+"$"+money(grand)+p2; });
   return html;
 };
 
@@ -2623,7 +2623,7 @@ window.renderSync=function(){
     +'<div class="btnrow" style="margin:0"><button class="btn ghost sm" onclick="syncNow()">Sync now</button></div>';
   syncChip("on");
   psAutoPull();
-}
+};
 
 /* refresh the Cloud sync card copy and drop the old "sign in per device" wording */
 (function fixSyncCopy(){
