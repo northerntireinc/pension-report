@@ -188,9 +188,9 @@
     .money.total,.amt .cur{color:#000}
     body.print-union .packet.mgmt{display:none!important}
     body.print-mgmt .packet.union{display:none!important}
-    .packet .sheet{width:8.5in;height:11in;overflow:hidden;display:flex;align-items:center;justify-content:center;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;margin:0 auto}
+    .packet .sheet{width:8.5in;height:11in;overflow:hidden;display:block;position:relative;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;margin:0 auto}
     .packet .sheet:last-child{page-break-after:auto;break-after:auto}
-    .gform{border:2px solid #000;width:860px;max-width:none;min-height:0;margin:0;box-sizing:border-box;transform:scale(var(--k,.87));transform-origin:center center;zoom:normal}
+    .gform{border:2px solid #000;width:860px;max-width:none;min-height:0;margin:0;box-sizing:border-box;position:absolute;top:var(--my,0);left:var(--mx,0);transform:scale(var(--k,.87));transform-origin:top left;zoom:normal}
     @page{size:letter portrait;margin:0}
   }
   .sumtbl{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
@@ -1145,13 +1145,16 @@ function fitForms(){
     el.style.transform="none"; el.style.zoom="1"; el.style.width="860px"; el.style.maxWidth="none"; el.style.minHeight="0";
     var w=el.scrollWidth||860, h=el.scrollHeight||1;
     var k=Math.min(pageW/w, pageH/h, 1);
-    el.style.setProperty("--k", String(Math.floor(k*1000)/1000));
+    k=Math.floor(k*1000)/1000;
+    el.style.setProperty("--k", String(k));
+    el.style.setProperty("--mx", Math.max(0,Math.round((816-w*k)/2))+"px");
+    el.style.setProperty("--my", Math.max(0,Math.round((1056-h*k)/2))+"px");
     el.style.transform=""; el.style.width=""; el.style.maxWidth=""; el.style.minHeight="";
   });
 }
 function resetForms(){
   var forms=document.querySelectorAll("#tab-print .gform");
-  Array.prototype.forEach.call(forms,function(el){ el.style.removeProperty("--k"); el.style.transform=""; el.style.zoom=""; el.style.width=""; el.style.maxWidth=""; el.style.minHeight=""; });
+  Array.prototype.forEach.call(forms,function(el){ el.style.removeProperty("--k"); el.style.removeProperty("--mx"); el.style.removeProperty("--my"); el.style.transform=""; el.style.zoom=""; el.style.width=""; el.style.maxWidth=""; el.style.minHeight=""; });
 }
 function clearPrint(){ document.body.classList.remove("print-union","print-mgmt","print-form"); var fp=document.getElementById("formPrint"); if(fp)fp.innerHTML=""; resetForms(); }
 window.printGroup=function(which){
@@ -1563,10 +1566,56 @@ function renderContractDiff(){
 window.renderContractDiff=renderContractDiff;
 window.contractResetFields=function(){ renderContract(); };
 window.gotoTab=function(t){ var b=document.querySelector('nav.tabs button[data-tab="'+t+'"]'); if(b)b.click(); };
+
+/* back-dated contract change: refigure filed months at the new rates and post the
+   difference into the CURRENT work month's Adjustments column (Shop & Salary). */
+function autoBackAdjust(inp, oldRates){
+  var eff=(inp.eff||"").slice(0,7); if(!eff) return "";
+  var cur=S.currentMonth; if(!(eff<cur)) return "";
+  var changed=S.settings.funds.filter(function(f){ return Math.abs((Number(f.rate)||0)-(oldRates[f.id]||0))>1e-9; });
+  if(!changed.length) return "";
+  var save=S.currentMonth, sums={union:{},mgmt:{}}, monthsHit=[];
+  try{
+    Object.keys(S.months).sort().forEach(function(m){
+      if(m<eff||m>=cur) return;
+      var md=S.months[m]||{}, has=Object.keys(md).some(function(k){ if(k.slice(0,2)==="__")return false; var e=md[k]||{}; return (Number(e.worked)||0)>0||(Number(e.salHours)||0)>0||(Number(e.base)||0)>0; });
+      if(!has) return;
+      S.currentMonth=m; monthsHit.push(m);
+      S.employees.forEach(function(emp){
+        var cov=(emp.coverage||"union")==="mgmt"?"mgmt":"union";
+        var c=calcEmp(emp); if(c.hours<=0&&c.base<=0) return;
+        changed.forEach(function(f){
+          if(!fundApplies(emp,f)) return;
+          var d=(Number(f.rate)||0)-(oldRates[f.id]||0), amt=0;
+          if(f.basis==="pct") amt=c.base*d/100;
+          else if(f.basis==="flat") amt=(c.hours>0?d:0);
+          else amt=c.hours*d;
+          if(amt) sums[cov][f.id]=(sums[cov][f.id]||0)+amt;
+        });
+      });
+    });
+  } finally { S.currentMonth=save; }
+  var md=S.months[cur]||(S.months[cur]={});
+  if(!md.__adj||typeof md.__adj!=="object") md.__adj={union:{},mgmt:{}};
+  if(!md.__adj.union)md.__adj.union={}; if(!md.__adj.mgmt)md.__adj.mgmt={};
+  var lines=[], any=false;
+  ["union","mgmt"].forEach(function(cov){
+    Object.keys(sums[cov]).forEach(function(fid){
+      var v=Math.round(sums[cov][fid]*100)/100; if(!v) return;
+      any=true;
+      md.__adj[cov][fid]=Math.round(((Number(md.__adj[cov][fid])||0)+v)*100)/100;
+      var f=S.settings.funds.filter(function(x){return x.id===fid;})[0];
+      lines.push((cov==="mgmt"?"Salary":"Shop")+" \u00b7 "+(f?f.name:fid)+": "+(v<0?"-$":"+$")+money(Math.abs(v)));
+    });
+  });
+  if(!any) return "";
+  return "\n\nBack-dated to "+eff+": true-up adjustments added to "+monthName()+" ("+monthsHit.join(", ")+" refigured at the new rates):\n"+lines.join("\n")+"\n\nReview them on the Print / File tab before filing.";
+}
 window.applyContractUpdate=function(){
   var inp=readContractInputs(), ch=contractChanges(inp);
   if(!ch.length){ alert("No changes to apply \u2014 the new values match the current ones."); return; }
   if(!confirm("Apply "+ch.length+" change"+(ch.length===1?"":"s")+"?\n\n"+ch.map(function(c){return c.k+": "+c.from+" \u2192 "+c.to;}).join("\n")+"\n\nThis updates every report and the printed form.")) return;
+  var oldRates={}; S.settings.funds.forEach(function(f){oldRates[f.id]=Number(f.rate)||0;});
   inp.prem.forEach(function(p){var f=S.settings.funds.filter(function(x){return x.id===p.id;})[0]; if(f)f.rate=p.rate;});
   S.settings.minHours=inp.min; S.settings.maxHours=inp.max;
   if(inp.label) S.settings.contractLabel=inp.label;
@@ -1576,8 +1625,10 @@ window.applyContractUpdate=function(){
     premiums:inp.prem.map(function(p){return {id:p.id,name:p.name,basis:p.basis,rate:p.rate};}),
     min:inp.min, cap:inp.max,
     changes:ch.map(function(c){return c.k+": "+c.from+" \u2192 "+c.to;}) });
+  var adjMsg="";
+  try{ adjMsg=autoBackAdjust(inp, oldRates); }catch(e){ adjMsg="\n\n(Could not auto-figure back adjustments: "+(e&&e.message||e)+")"; }
   persist(); renderAll(); renderContract();
-  alert("Contract updated. "+ch.length+" change"+(ch.length===1?"":"s")+" applied across the app.");
+  alert("Contract updated. "+ch.length+" change"+(ch.length===1?"":"s")+" applied across the app."+adjMsg);
 };
 window.delContractRev=function(hid){ if(!confirm("Delete this history entry? (It won\u2019t change current values.)"))return; S.contractHistory=(S.contractHistory||[]).filter(function(x){return x.id!==hid;}); persist(); renderContractHist(); };
 window.revertContract=function(hid){
@@ -2438,7 +2489,7 @@ window.formP1=function(cov,title){
   });
   var grand=g.t.total+grandAdj;
   /* swap the original tbody + grand total into the produced HTML */
-  html=html.replace(/(<tbody>)[\s\S]*?(<\/tbody>\s*<tfoot>)/, '$1'+remit+'$2');
+  html=html.replace(/(<table class="remt">[\s\S]*?<tbody>)[\s\S]*?(<\/tbody>)/, '$1'+remit+'$2');
   html=html.replace(/(class="rt grt">)\$[\d,]+\.\d2(<\/td>)/, '$1$'+money(grand)+'$2');
   return html;
 };
