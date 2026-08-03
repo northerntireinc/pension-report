@@ -1611,6 +1611,64 @@ function autoBackAdjust(inp, oldRates){
   if(!any) return "";
   return "\n\nBack-dated to "+eff+": true-up adjustments added to "+monthName()+" ("+monthsHit.join(", ")+" refigured at the new rates):\n"+lines.join("\n")+"\n\nReview them on the Print / File tab before filing.";
 }
+/* run the true-up any time from a logged contract update (for rate changes applied
+   before this feature existed, or applied while the work month was still the old month) */
+window.trueUpFromHistory=function(hid){
+  var snap=(S.contractHistory||[]).filter(function(x){return x.id===hid;})[0];
+  if(!snap){ alert("History entry not found."); return; }
+  if(!snap.eff){ alert("This update has no effective date recorded, so I can\u2019t tell which months to refigure."); return; }
+  var eff=String(snap.eff).slice(0,7), cur=S.currentMonth;
+  if(!(eff<cur)){ alert("Set the work month (top of the screen) to the month the true-up should be REPORTED on \u2014 e.g. July 2026 for a June change \u2014 then tap this again. Right now the work month is "+monthName()+"."); return; }
+  var deltas={}, dl=[];
+  (snap.changes||[]).forEach(function(str){
+    var m=String(str).match(/^(.*?):\s*(.+?)\s*\u2192\s*(.+)$/); if(!m) return;
+    var nm=m[1].trim(); if(/^Minimum hours$|^Max hours/i.test(nm)) return;
+    var f=S.settings.funds.filter(function(x){return x.name===nm;})[0]; if(!f) return;
+    var from=parseFloat(String(m[2]).replace(/[^0-9.\-]/g,"")), to=parseFloat(String(m[3]).replace(/[^0-9.\-]/g,""));
+    if(!isFinite(from)||!isFinite(to)||Math.abs(to-from)<1e-9) return;
+    deltas[f.id]=to-from; dl.push(f.name+" "+(to-from>0?"+":"")+(f.basis==="pct"?(Math.round((to-from)*100)/100)+"%":"$"+money(Math.abs(to-from))));
+  });
+  if(!Object.keys(deltas).length){ alert("No fund-rate changes found in this update."); return; }
+  var save=S.currentMonth, sums={union:{},mgmt:{}}, monthsHit=[];
+  try{
+    Object.keys(S.months).sort().forEach(function(m){
+      if(m<eff||m>=cur) return;
+      var md=S.months[m]||{}, has=Object.keys(md).some(function(k){ if(k.slice(0,2)==="__")return false; var e=md[k]||{}; return (Number(e.worked)||0)>0||(Number(e.salHours)||0)>0||(Number(e.base)||0)>0; });
+      if(!has) return;
+      S.currentMonth=m; monthsHit.push(m);
+      S.employees.forEach(function(emp){
+        var cov=(emp.coverage||"union")==="mgmt"?"mgmt":"union";
+        var c=calcEmp(emp); if(c.hours<=0&&c.base<=0) return;
+        S.settings.funds.forEach(function(f){
+          var d=deltas[f.id]; if(!d) return;
+          if(!fundApplies(emp,f)) return;
+          var amt=0;
+          if(f.basis==="pct") amt=c.base*d/100;
+          else if(f.basis==="flat") amt=(c.hours>0?d:0);
+          else amt=c.hours*d;
+          if(amt) sums[cov][f.id]=(sums[cov][f.id]||0)+amt;
+        });
+      });
+    });
+  } finally { S.currentMonth=save; }
+  var lines=[], any=false, preview=[];
+  ["union","mgmt"].forEach(function(cov){
+    Object.keys(sums[cov]).forEach(function(fid){
+      var v=Math.round(sums[cov][fid]*100)/100; if(!v) return; any=true;
+      var f=S.settings.funds.filter(function(x){return x.id===fid;})[0];
+      preview.push({cov:cov,fid:fid,v:v,name:(f?f.name:fid)});
+      lines.push((cov==="mgmt"?"Salary":"Shop")+" \u00b7 "+(f?f.name:fid)+": "+(v<0?"-$":"+$")+money(Math.abs(v)));
+    });
+  });
+  if(!any){ alert("Nothing to true up \u2014 no reported hours found in "+eff+" through the month before "+monthName()+"."); return; }
+  if(!confirm("Add these true-up adjustments to "+monthName()+"?\n(Refigured "+monthsHit.join(", ")+" for: "+dl.join(", ")+")\n\n"+lines.join("\n")+"\n\nThis ADDS to any adjustments already on the month \u2014 run it only once.")) return;
+  var md=S.months[cur]||(S.months[cur]={});
+  if(!md.__adj||typeof md.__adj!=="object") md.__adj={union:{},mgmt:{}};
+  if(!md.__adj.union)md.__adj.union={}; if(!md.__adj.mgmt)md.__adj.mgmt={};
+  preview.forEach(function(p){ md.__adj[p.cov][p.fid]=Math.round(((Number(md.__adj[p.cov][p.fid])||0)+p.v)*100)/100; });
+  persist(); renderAll();
+  alert("Done \u2014 true-up adjustments added to "+monthName()+":\n"+lines.join("\n")+"\n\nSee the Adjustments boxes on the Print / File tab; they flow into the printed form and totals.");
+};
 window.applyContractUpdate=function(){
   var inp=readContractInputs(), ch=contractChanges(inp);
   if(!ch.length){ alert("No changes to apply \u2014 the new values match the current ones."); return; }
@@ -1649,7 +1707,7 @@ function renderContractHist(){
     return '<div class="filerow"><div class="filehead"><div><b>'+esc(s.label||"Contract update")+'</b>'
       +'<div class="footnote" style="margin:2px 0 0">'+(s.eff?("Effective "+esc(fmtFull(s.eff))+" \u00b7 "):"")+"applied "+dt+'</div></div></div>'
       +'<div class="footnote" style="margin-top:6px">'+(s.changes&&s.changes.length?s.changes.map(esc).join("<br>"):"(no field changes recorded)")+'</div>'
-      +'<div class="btnrow no-print" style="margin-top:8px"><button class="btn ghost sm" onclick="revertContract(\''+s.id+'\')">Revert to this</button><button class="btn danger sm" onclick="delContractRev(\''+s.id+'\')">Delete</button></div></div>';
+      +'<div class="btnrow no-print" style="margin-top:8px"><button class="btn brass sm" onclick="trueUpFromHistory(\''+s.id+'\')">Figure true-up adjustments</button><button class="btn ghost sm" onclick="revertContract(\''+s.id+'\')">Revert to this</button><button class="btn danger sm" onclick="delContractRev(\''+s.id+'\')">Delete</button></div></div>';
   }).join("");
 }
 function fmtFull(iso){var d=parseD(iso);return d?d.toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}):iso;}
