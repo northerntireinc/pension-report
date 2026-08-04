@@ -687,7 +687,7 @@ if(!S.migrated3029V14){
   S.migrated3029V14=true; persist();
 }
 function monthData(){if(!S.months[S.currentMonth])S.months[S.currentMonth]={};return S.months[S.currentMonth];}
-function entry(eid){var m=monthData();if(!m[eid])m[eid]={worked:0,sick:0,vac:0,salHours:0,base:0};return m[eid];}
+function entry(eid){var m=monthData();if(!m[eid]){m[eid]={worked:0,sick:0,vac:0,salHours:0,base:0};var _e=(S.employees||[]).filter(function(x){return x.id===eid;})[0];if(_e&&_e.type==="salaried"){var _pm=Object.keys(S.months).filter(function(k){return k<S.currentMonth&&S.months[k]&&S.months[k][eid]&&Number(S.months[k][eid].salHours)>0;}).sort();if(_pm.length)m[eid].salHours=Number(S.months[_pm[_pm.length-1]][eid].salHours)||0;}}return m[eid];}
 
 /* ---------- calc ---------- */
 function hpdFor(emp){var v=(emp.hpd!=null&&emp.hpd!=="")?Number(emp.hpd):8;return isFinite(v)?v:8;}
@@ -2489,7 +2489,7 @@ function fundDisplay(cov){
   g.list.forEach(function(emp){ var c=calcEmp(emp); if(c.hours<=0&&c.base<=0)return;
     S.settings.funds.forEach(function(f){ if(fundApplies(emp,f)){ pf[f.id]+=c.fundAmts[f.id]||0; ph[f.id]+=c.hours; pb[f.id]+=c.base; } }); });
   function applies(f){ return cov==="mgmt" ? f.mgmt===true : true; }
-  var funds=S.settings.funds.filter(function(f){ return applies(f)&&Number(f.rate)>0&&((f.basis==="pct"?pb[f.id]:ph[f.id])>0); });
+  var funds=S.settings.funds.filter(function(f){ return applies(f)&&((Number(f.rate)>0&&((f.basis==="pct"?pb[f.id]:ph[f.id])>0))||adjFor(cov,f.id)!==0); });
   return {funds:funds,pf:pf,g:g};
 }
 window.onAdj=function(cov,fid,val){ setAdjValue(cov,fid,val); renderPackets(); updateAdjTotals(cov); refreshPrintSummaries(); };
@@ -2535,7 +2535,7 @@ window.formP1=function(cov,title){
   function applies(f){ return cov==="mgmt" ? f.mgmt===true : true; }
   var remit="";
   S.settings.funds.forEach(function(f){
-    var on=applies(f)&&Number(f.rate)>0&&((f.basis==="pct"?pb[f.id]:ph[f.id])>0);
+    var on=applies(f)&&((Number(f.rate)>0&&((f.basis==="pct"?pb[f.id]:ph[f.id])>0))||adjFor(cov,f.id)!==0);
     var adj=on?adjFor(cov,f.id):0; if(on) grandAdj+=adj;
     var tot=(pf[f.id]||0)+adj;
     remit+='<tr><td class="rx romit"></td><td class="rf">'+esc(f.name.toUpperCase())+'</td>'
