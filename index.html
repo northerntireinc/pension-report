@@ -1877,8 +1877,14 @@ window.tsPull=async function(){
       var tsid=map[emp.id]; if(!tsid) return;
       var te=byId[tsid]; if(!te){ missing.push(lastName(emp.name)); return; }
       var hh=Math.round((Number(te.hours)||0)*100)/100; var e=entry(emp.id);
-      if(emp.type==="salaried"){ e.salHours=hh; } else { e.worked=hh; }
-      applied.push(lastName(emp.name)+" "+hrs(hh));
+      if(emp.type==="salaried"){ e.salHours=hh; }
+      else {
+        var _hol=0; Object.keys(S.settings.holidays||{}).forEach(function(iso){ if(iso>=p.start&&iso<=p.end) _hol++; });
+        var _lg=(S.settings.leaveLog&&S.settings.leaveLog[emp.id])||{}, _sk=0,_vc=0;
+        Object.keys(_lg).forEach(function(iso){ if(iso<p.start||iso>p.end)return; if(_lg[iso]==="S")_sk++; else if(_lg[iso]==="V")_vc++; });
+        e.worked=Math.round((hh+_hol*hpdFor(emp))*100)/100; e.sick=_sk; e.vac=_vc;
+      }
+      applied.push(lastName(emp.name)+" "+hrs(emp.type==="salaried"?hh:(e.worked+(e.sick+e.vac)*hpdFor(emp)))+(emp.type==="salaried"?"":" (clock "+hrs(hh)+" + hol/sick/vac)"));
     });
     S.settings.tsLast=new Date().toISOString();
     persist(); renderAll();
@@ -2134,17 +2140,20 @@ function leaveAllocFor(emp,wp){
   var hpd=hpdFor(emp), lf=leftFor(emp), sickRem=lf.sick, vacRem=lf.vac;
   var missed=missedWorkdays(emp,wp), sickD=0,vacD=0,unpaidD=0,toSend=[],skipped=[];
   var ov=(wp.leaveOverride&&wp.leaveOverride[emp.id])||{};
+  if(!S.settings.leaveLog)S.settings.leaveLog={}; if(!S.settings.leaveLog[emp.id])S.settings.leaveLog[emp.id]={};
+  var LG=S.settings.leaveLog[emp.id];
+  Object.keys(LG).forEach(function(iso){ if(iso>=wp.start&&iso<=wp.end) delete LG[iso]; });
   missed.forEach(function(iso){
     var man=ov[iso]||"";                              /* manual override wins */
-    if(man==="U"){ unpaidD++; skipped.push({iso:iso,reason:"set to Unpaid"}); return; }
-    if(man==="S"){ sickD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"S"}); return; }
-    if(man==="V"){ vacD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"V"}); return; }
+    if(man==="U"){ unpaidD++; LG[iso]="U"; skipped.push({iso:iso,reason:"set to Unpaid"}); return; }
+    if(man==="S"){ sickD++; LG[iso]="S"; toSend.push({pid:portalIdFor(emp),date:iso,type:"S"}); return; }
+    if(man==="V"){ vacD++; LG[iso]="V"; toSend.push({pid:portalIdFor(emp),date:iso,type:"V"}); return; }
     var existing=portalOn()?portalEntryType(emp,iso):"";
-    if(existing==="S"){ sickD++; skipped.push({iso:iso,reason:"already in the portal as sick"}); return; }
-    if(existing==="V"){ vacD++; skipped.push({iso:iso,reason:"already in the portal as vacation"}); return; }
-    if(sickRem>0){ sickRem--; sickD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"S"}); }
-    else if(vacRem>0){ vacRem--; vacD++; toSend.push({pid:portalIdFor(emp),date:iso,type:"V"}); }
-    else { unpaidD++; skipped.push({iso:iso,reason:"no sick or vacation balance left (unpaid)"}); }
+    if(existing==="S"){ sickD++; LG[iso]="S"; skipped.push({iso:iso,reason:"already in the portal as sick"}); return; }
+    if(existing==="V"){ vacD++; LG[iso]="V"; skipped.push({iso:iso,reason:"already in the portal as vacation"}); return; }
+    if(sickRem>0){ sickRem--; sickD++; LG[iso]="S"; toSend.push({pid:portalIdFor(emp),date:iso,type:"S"}); }
+    else if(vacRem>0){ vacRem--; vacD++; LG[iso]="V"; toSend.push({pid:portalIdFor(emp),date:iso,type:"V"}); }
+    else { unpaidD++; LG[iso]="U"; skipped.push({iso:iso,reason:"no sick or vacation balance left (unpaid)"}); }
   });
   return {missedD:missed.length,sickD:sickD,vacD:vacD,unpaidD:unpaidD,sickH:sickD*hpd,vacH:vacD*hpd,toSend:toSend,skipped:skipped,na:false};
 }
@@ -2449,7 +2458,7 @@ function renderWeekBox(){
     +'</details>'
     +'</div>';
 }
-window.onWeekHoliday=function(iso,on){ var wp=S.settings.weekPull; if(!wp)return; if(!wp.holidays)wp.holidays={}; if(on)wp.holidays[iso]=true; else delete wp.holidays[iso]; persist(); renderWeekBox(); };
+window.onWeekHoliday=function(iso,on){ var wp=S.settings.weekPull; if(!wp)return; if(!wp.holidays)wp.holidays={}; if(!S.settings.holidays)S.settings.holidays={}; if(on){wp.holidays[iso]=true;S.settings.holidays[iso]=true;} else {delete wp.holidays[iso];delete S.settings.holidays[iso];} persist(); renderWeekBox(); };
 window.onWeekNotes=function(v){ var wp=S.settings.weekPull; if(!wp)return; wp.notes=v; persist(); };
 window.onLeaveOverride=function(empId,iso,val){ var wp=S.settings.weekPull; if(!wp)return; if(!wp.leaveOverride)wp.leaveOverride={}; if(!wp.leaveOverride[empId])wp.leaveOverride[empId]={}; if(val) wp.leaveOverride[empId][iso]=val; else delete wp.leaveOverride[empId][iso]; persist(); renderWeekBox(); };
 
@@ -2467,8 +2476,14 @@ window.tsPull=async function(){
       var tsid=map[emp.id]; if(!tsid) return;
       var te=byId[tsid]; if(!te){ missing.push(lastName(emp.name)); return; }
       var hh=Math.round((Number(te.hours)||0)*100)/100, e=entry(emp.id);
-      if(emp.type==="salaried") e.salHours=hh; else e.worked=hh;
-      applied.push(lastName(emp.name)+" "+hrs(hh));
+      if(emp.type==="salaried") e.salHours=hh;
+      else {
+        var _hol=0; Object.keys(S.settings.holidays||{}).forEach(function(iso){ if(iso>=p.start&&iso<=p.end) _hol++; });
+        var _lg=(S.settings.leaveLog&&S.settings.leaveLog[emp.id])||{}, _sk=0,_vc=0;
+        Object.keys(_lg).forEach(function(iso){ if(iso<p.start||iso>p.end)return; if(_lg[iso]==="S")_sk++; else if(_lg[iso]==="V")_vc++; });
+        e.worked=Math.round((hh+_hol*hpdFor(emp))*100)/100; e.sick=_sk; e.vac=_vc;
+      }
+      applied.push(lastName(emp.name)+" "+hrs(hh)+(emp.type==="salaried"?"":" clock"));
     });
     S.settings.tsLast=new Date().toISOString(); persist(); renderAll();
     var msg="Pulled "+p.start+"–"+p.end+" into the month: "+(applied.join(", ")||"nothing matched");
