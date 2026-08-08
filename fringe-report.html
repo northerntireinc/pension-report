@@ -653,7 +653,7 @@ async function doPull(start, end){
     const emp = employees.find(e => tname.includes(e.full_name.split(",")[0].trim().toUpperCase()));
     if(!emp){ if(ts.hours > 0) unmatched.push(ts.name); continue; }
     for(const d in (ts.days || {})){
-      rows.push({ employee_id: emp.id, work_date: d, hours: ts.days[d], updated_at: new Date().toISOString() });
+      rows.push({ employee_id: emp.id, work_date: d, hours: ts.days[d], code: null, updated_at: new Date().toISOString() });
     }
   }
   if(rows.length){
