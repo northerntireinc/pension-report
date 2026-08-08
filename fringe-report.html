@@ -128,8 +128,8 @@
 
 <script>
 /* ==== CONFIG — paste your payroll project's anon key ==== */
-const SUPABASE_URL = "https://ogmvswqcvzohizjfgixm.supabase.co";
-const SUPABASE_ANON_KEY = "PASTE_ANON_KEY_HERE";
+const SUPABASE_URL = "https://whgpxwaeiqattiercpca.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3B4d2FlaXFhdHRpZXJjcGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MjYzODUsImV4cCI6MjA5ODAwMjM4NX0.t9w5ExpsejK6VvvUu1gEfxAtvU27eVy1vDL9WTZBRms";
 const HEALTH_MAX_HOURS = 2080;
 const FUND_ORDER = ["TRAINING","HEALTH","PENSION"];
 /* ======================================================== */
@@ -347,7 +347,7 @@ function exportExcel(){
     const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates:true });
     employees.forEach((_, i) => {
       const r = i + 2;
-      ws["F" + r] = { t:"n", f:`D${r}*E${r}`, z:"0.00" };
+      ws["F" + r] = { t:"n", f:`ROUND(D${r}*E${r},2)`, z:"0.00" };
       ws[col(mStart - 1) + r] = { t:"n", f:`SUM(${col(mStart)}${r}:${col(mEnd)}${r})`, z:"0.00" }; // YTD
       if(health) ws["G" + r] = { t:"n", f:`MAX(0,${HEALTH_MAX_HOURS}-SUM(${col(mStart)}${r}:${col(mEnd)}${r}))`, z:"0.00" };
     });
