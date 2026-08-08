@@ -86,14 +86,14 @@
   <input type="email" id="email" placeholder="Email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
   <input type="password" id="password" placeholder="Password" autocomplete="current-password">
   <button class="btn" style="width:100%" onclick="signIn()">Sign in</button>
-  <p style="margin-top:12px;text-align:center"><a href="index.html" style="color:var(--steel);font-size:13px">&#8592; Back to Pension App</a></p>
+  <p style="margin-top:12px;text-align:center"><a href="index.html" style="color:var(--steel);font-size:13px">&#8592; Back to Pension App</a><br><span style="color:var(--muted);font-size:11px">build v14</span></p>
 </div>
 
 <div id="app" hidden>
 <header class="appbar">
   <button onclick="location.href='index.html'">&#8592; Pension App</button>
   <h1>Fringe Benefit Report</h1>
-  <span class="sub">IUOE Local 324 · Section S Shop Agreement · attach to Form 3029</span>
+  <span class="sub">IUOE Local 324 · Section S Shop Agreement · attach to Form 3029 · <b>build v14</b></span>
   <span class="spacer"></span>
   <button onclick="signOut()">Sign out</button>
 </header>
@@ -139,7 +139,7 @@
       <span class="grow"></span>
       <button class="btn" onclick="applyTotals()">Write totals to monthly report</button>
     </div>
-    <p class="note">Type hours per day, or type <b>S</b> (sick), <b>V</b> (vacation), or <b>H</b> (holiday) in a day's box. "Fill leave codes" (and every TimeStation pull) marks S/V days automatically from the leave portal; holidays are typed by hand. Leave days count zero fringe hours &mdash; only clocked hours go to the funds. Weeks run Sunday&ndash;Saturday to match TimeStation. A removed week keeps its saved hours; it just doesn't count in this period. "Write totals" fills the monthly report from the weeks shown.</p>
+    <p class="note">Type hours per day, or type <b>S</b> (sick), <b>V</b> (vacation), or <b>H</b> (holiday) in a day's box. "Fill leave codes" (and every TimeStation pull) marks S/V days automatically from the leave portal; company holidays fill from the holiday list. A code alone counts <b>8 hours</b> toward the funds; type <b>S4</b> for a 4-hour sick day. Weeks run Sunday&ndash;Saturday to match TimeStation. A removed week keeps its saved hours; it just doesn't count in this period. "Write totals" fills the monthly report from the weeks shown.</p>
     <div id="wsGrid"></div>
   </div>
 
@@ -349,6 +349,7 @@ function renderRunning(cy, ms, mo){
 
 /* ===== Daily hours worksheet (backs up the monthly 3029 totals) ===== */
 const WEEK_START_DAY = 0;   // 0 = Sunday (matches TimeStation's Sun–Sat week). Change to 6 for Sat–Fri.
+const LEAVE_DAY_HOURS = 8;  // hours credited to the funds for a full S/V/H day
 const WEEK_END_DAY = (WEEK_START_DAY + 6) % 7;
 const DAY_NAMES = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
 const DAY_LABELS = Array.from({length: 7}, (_, i) => DAY_NAMES[(WEEK_START_DAY + i) % 7]);
@@ -405,8 +406,8 @@ function renderWorksheet(){
       const cells = days.map((iso, i) => {
         const c = codes[emp.id][iso];
         const v = daily[emp.id][iso];
-        if(!c && v != null){ et += v; colTot[i] += v; }
-        const shown = c ? c : (v != null ? v : "");
+        if(v != null){ et += v; colTot[i] += v; }
+        const shown = c ? (v === LEAVE_DAY_HOURS ? c : c + (v ?? "")) : (v != null ? v : "");
         return `<td class="num"><input class="hrs sm ${c ? "code" : ""}" type="text" value="${shown}"
                  onchange="saveDaily('${emp.id}','${iso}',this)"></td>`;
       }).join("");
@@ -429,8 +430,8 @@ function renderWorksheet(){
   for(const emp of employees){
     let t = 0; const cc = { S: 0, V: 0, H: 0 };
     fr.forEach(fri => weekDays(fri).forEach(iso => {
-      if(codes[emp.id][iso]){ cc[codes[emp.id][iso]]++; }
-      else t += daily[emp.id][iso] || 0;
+      if(codes[emp.id][iso]) cc[codes[emp.id][iso]]++;
+      t += daily[emp.id][iso] || 0;
     }));
     allTot += t;
     const leave = ["S","V","H"].filter(k => cc[k]).map(k => cc[k] + " " + k).join(", ") || "—";
@@ -459,12 +460,15 @@ async function saveDaily(empId, iso, input){
     await sb.from("fringe_daily_hours").delete().eq("employee_id", empId).eq("work_date", iso);
     delete daily[empId][iso]; delete codes[empId][iso]; renderWorksheet(); return;
   }
-  if(["S","V","H"].includes(raw)){
+  const cm = raw.match(/^([SVH])(\d+(?:\.\d+)?)?$/);
+  if(cm){
+    const hrs = cm[2] != null ? Number(cm[2]) : LEAVE_DAY_HOURS;
+    if(isNaN(hrs) || hrs < 0 || hrs > 24){ restore(); return; }
     const { error } = await sb.from("fringe_daily_hours")
-      .upsert({ employee_id: empId, work_date: iso, hours: 0, code: raw, updated_at: new Date().toISOString() },
+      .upsert({ employee_id: empId, work_date: iso, hours: hrs, code: cm[1], updated_at: new Date().toISOString() },
               { onConflict: "employee_id,work_date" });
     if(error){ alert("Save failed: " + error.message); restore(); return; }
-    daily[empId][iso] = 0; codes[empId][iso] = raw;
+    daily[empId][iso] = hrs; codes[empId][iso] = cm[1];
     renderWorksheet(); return;
   }
   const v = Number(raw);
@@ -487,19 +491,31 @@ function empInitials(emp){
 async function autoFillCodes(){
   const fr = periodWeekEnds($("moSel").value);
   const start = addDays(fr[0], -6), end = fr[fr.length - 1];
-  const { data, error } = await pb.from("leave_entries").select("emp_id,date,type").gte("date", start).lte("date", end);
-  if(error){ alert("Couldn't read the leave portal: " + error.message); return 0; }
+  const [leaveRes, holRes] = await Promise.all([
+    pb.from("leave_entries").select("emp_id,date,type").gte("date", start).lte("date", end),
+    sb.from("fringe_holidays").select("holiday_date").gte("holiday_date", start).lte("holiday_date", end)
+  ]);
+  if(leaveRes.error){ alert("Couldn't read the leave portal: " + leaveRes.error.message); return 0; }
+  const data = leaveRes.data, holidays = (holRes.data || []).map(h => h.holiday_date);
   const rows = [];
+  const canFill = (empId, d) => {
+    const dow = new Date(d + "T00:00:00Z").getUTCDay();
+    if(dow === 0 || dow === 6) return false;                       // weekends: no fill
+    return !((daily[empId][d] || 0) > 0 || codes[empId][d]);       // clocked or already marked
+  };
   for(const emp of employees){
     const init = empInitials(emp);
     for(const le of (data || [])){
       if((le.emp_id || "").toLowerCase() !== init) continue;
       const d = le.date, t = (le.type || "").toUpperCase();
       if(!["S","V","H"].includes(t)) continue;
-      const dow = new Date(d + "T00:00:00Z").getUTCDay();
-      if(dow === 0 || dow === 6) continue;                       // weekends: no fill
-      if((daily[emp.id][d] || 0) > 0 || codes[emp.id][d]) continue; // clocked or already marked
-      rows.push({ employee_id: emp.id, work_date: d, hours: 0, code: t, updated_at: new Date().toISOString() });
+      if(!canFill(emp.id, d)) continue;
+      rows.push({ employee_id: emp.id, work_date: d, hours: LEAVE_DAY_HOURS, code: t, updated_at: new Date().toISOString() });
+    }
+    for(const d of holidays){
+      if(!canFill(emp.id, d)) continue;
+      if(rows.some(r => r.employee_id === emp.id && r.work_date === d)) continue;
+      rows.push({ employee_id: emp.id, work_date: d, hours: LEAVE_DAY_HOURS, code: "H", updated_at: new Date().toISOString() });
     }
   }
   if(rows.length){
@@ -591,8 +607,8 @@ function exportExcel(){
         const r = aoa.length + 1;                     // 1-based row this line will land on
         aoa.push([emp.full_name, ...days.map(iso => {
           const c = codes[emp.id] && codes[emp.id][iso];
-          if(c) return c;
           const h = daily[emp.id] && daily[emp.id][iso];
+          if(c) return h === LEAVE_DAY_HOURS ? c : (h ?? null);   // partial leave exports as its hours
           return h != null ? h : null;
         }), null]);
         empTotalRefs[ei].push("I" + r);
@@ -606,7 +622,7 @@ function exportExcel(){
     let rowPtr = 0;
     for(const fri of fr){
       rowPtr += 3;                                    // blank + week title + header
-      employees.forEach(() => { rowPtr += 1; dws["I" + (rowPtr + 1)] = { t: "n", f: `SUM(B${rowPtr + 1}:H${rowPtr + 1})`, z: "0.00" }; });
+      employees.forEach(() => { rowPtr += 1; dws["I" + (rowPtr + 1)] = { t: "n", f: `SUM(B${rowPtr + 1}:H${rowPtr + 1})+${LEAVE_DAY_HOURS}*(COUNTIF(B${rowPtr + 1}:H${rowPtr + 1},"S")+COUNTIF(B${rowPtr + 1}:H${rowPtr + 1},"V")+COUNTIF(B${rowPtr + 1}:H${rowPtr + 1},"H"))`, z: "0.00" }; });
     }
     rowPtr += 2;                                      // blank + PERIOD TOTALS title
     employees.forEach((emp, ei) => {
