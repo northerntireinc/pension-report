@@ -96,13 +96,17 @@ on conflict (employee_id, work_month) do update set hours = excluded.hours;
 -- with your actual kiosk table + columns, then the report page's
 -- "Sync from time clock" button fills the month automatically.
 --
--- IMPORTANT — fringe hours rule (effective Aug 2026 forward):
--- Fringe hours for all 3 funds = RAW clocked hours only.
--- The 0.5 hr/day break credit is wages-only (TimeStation adds it,
--- stacking per 6 consecutive hours) — it is paid in payroll but
--- NO fringe contributions are owed on any credit hours.
--- When building this query, sum actual punch time only; do not
--- include TimeStation's credited totals.
+-- IMPORTANT — fringe hours rules (effective Aug 2026 forward):
+-- 1) Fringe hours for all 3 funds = RAW clocked hours only.
+--    The 0.5 hr/day break credit was wages-only (TimeStation
+--    fixed Aug 2026); no fringe contributions on credit hours.
+-- 2) MONTH = PAYROLL-DATE basis, not calendar work weeks:
+--    a report month runs from the first payroll day of the month
+--    through the last payroll day of the month. A work week paid
+--    in the next month (e.g. work 6/21-27, paid in July) reports
+--    in the month the CHECK lands. When building this query,
+--    group hours by each pay period's PAY DATE month — never by
+--    date_trunc of the clock_in/work date.
 -- June/July 2026 stay as booked — do not restate past months.
 -- ============================================================
 create or replace function sync_fringe_hours(p_month date)
