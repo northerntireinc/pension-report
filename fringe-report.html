@@ -43,6 +43,7 @@
   tr.total td{border-top:2px solid var(--ink); border-bottom:none; font-weight:600; background:#f5f2ea;}
   td input.hrs{width:84px; padding:5px 6px; border:1px solid var(--line); border-radius:4px; font:inherit; text-align:right; font-variant-numeric:tabular-nums;}
   td input.hrs.sm{width:54px; padding:5px 4px;}
+  td input.hrs.code{color:var(--amber); font-weight:700; text-align:center;}
   td input.hrs:focus{outline:2px solid var(--amber); border-color:var(--amber);}
   .grand{background:var(--steel); color:#fff; border-radius:6px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
   .grand .amt{font-family:'Barlow Condensed'; font-size:28px; font-weight:700; font-variant-numeric:tabular-nums;}
@@ -134,10 +135,11 @@
       <button class="btn alt" onclick="shrinkWeek(-1)">&minus; First week</button>
       <button class="btn alt" onclick="shrinkWeek(1)">&minus; Last week</button>
       <button class="btn alt" onclick="extendWeek(1)">+ Week after</button>
+      <button class="btn alt" onclick="autoFillCodes().then(n => { renderWorksheet(); alert(n + ' leave day(s) marked from the portal.'); })">Fill leave codes</button>
       <span class="grow"></span>
       <button class="btn" onclick="applyTotals()">Write totals to monthly report</button>
     </div>
-    <p class="note">Type each man's hours per day. Weeks run Saturday&ndash;Friday (week ending Friday). Use the week buttons to shape the period to your payroll dates &mdash; a removed week keeps its saved hours, it just doesn't count in this period's totals. "Write totals" fills the monthly report from the weeks shown.</p>
+    <p class="note">Type hours per day, or type <b>S</b> (sick), <b>V</b> (vacation), or <b>H</b> (holiday) in a day's box. "Fill leave codes" (and every TimeStation pull) marks S/V days automatically from the leave portal; holidays are typed by hand. Leave days count zero fringe hours &mdash; only clocked hours go to the funds. Weeks run Sunday&ndash;Saturday to match TimeStation. A removed week keeps its saved hours; it just doesn't count in this period. "Write totals" fills the monthly report from the weeks shown.</p>
     <div id="wsGrid"></div>
   </div>
 
@@ -154,10 +156,15 @@ const SUPABASE_URL = "https://whgpxwaeiqattiercpca.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3B4d2FlaXFhdHRpZXJjcGNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MjYzODUsImV4cCI6MjA5ODAwMjM4NX0.t9w5ExpsejK6VvvUu1gEfxAtvU27eVy1vDL9WTZBRms";
 const HEALTH_MAX_HOURS = 2080;
 const FUND_ORDER = ["TRAINING","HEALTH","PENSION"];
+/* Leave portal (employee portal project) — read-only source for S/V day codes */
+const PORTAL_URL = "https://ogmvswqcvzohizjfgixm.supabase.co";
+const PORTAL_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nbXZzd3FjdnpvaGl6amZnaXhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1OTQ2MjMsImV4cCI6MjA4OTE3MDYyM30.151J4jVRjMkdZLCM6pd6_WKh31qQBBXUnIVX8808cFk";
 /* ======================================================== */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY,
   { auth: { storage: window.sessionStorage, storageKey: "fringe-auth" } });
+const pb = supabase.createClient(PORTAL_URL, PORTAL_ANON_KEY,
+  { auth: { storage: window.sessionStorage, storageKey: "fringe-portal" } });
 const MONTHS = ["JUNE","JULY","AUG","SEPT","OCT","NOV","DEC","JAN","FEB","MARCH","APRIL","MAY"];
 let employees = [], rates = {}, hours = {};   // hours[empId][isoMonth] = number
 
@@ -242,7 +249,7 @@ function healthBillable(empId, ms){
   return out;
 }
 
-let daily={}, extraB=0, extraA=0, wsMonth=null;
+let daily={}, codes={}, extraB=0, extraA=0, wsMonth=null;
 
 function render(){
   const cy = $("cySel").value, ms = cyMonths(cy), mo = $("moSel").value;
@@ -341,16 +348,19 @@ function renderRunning(cy, ms, mo){
 }
 
 /* ===== Daily hours worksheet (backs up the monthly 3029 totals) ===== */
-const DAY_LABELS = ["SAT","SUN","MON","TUE","WED","THU","FRI"];
+const WEEK_START_DAY = 0;   // 0 = Sunday (matches TimeStation's Sun–Sat week). Change to 6 for Sat–Fri.
+const WEEK_END_DAY = (WEEK_START_DAY + 6) % 7;
+const DAY_NAMES = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+const DAY_LABELS = Array.from({length: 7}, (_, i) => DAY_NAMES[(WEEK_START_DAY + i) % 7]);
 function addDays(iso, n){ const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
 function mdLabel(iso){ const [,m,dd] = iso.split("-"); return Number(m) + "/" + Number(dd); }
 
-function periodFridays(mo){                 // Fridays (week endings) in the month, plus/minus adjusted weeks
+function periodWeekEnds(mo){                 // week-ending dates in the month, plus/minus adjusted weeks
   const [y, m] = mo.split("-").map(Number);
   let fr = [];
   const d = new Date(Date.UTC(y, m - 1, 1));
   while(d.getUTCMonth() === m - 1){
-    if(d.getUTCDay() === 5) fr.push(d.toISOString().slice(0,10));
+    if(d.getUTCDay() === WEEK_END_DAY) fr.push(d.toISOString().slice(0,10));
     d.setUTCDate(d.getUTCDate() + 1);
   }
   for(let i = 0; i < extraB; i++) fr.unshift(addDays(fr[0], -7));
@@ -362,25 +372,30 @@ function periodFridays(mo){                 // Fridays (week endings) in the mon
 
 function extendWeek(dir){ if(dir < 0) extraB++; else extraA++; loadDaily().then(renderWorksheet); }
 function shrinkWeek(dir){
-  if(periodFridays($("moSel").value).length <= 1) return;   // always keep at least one week
+  if(periodWeekEnds($("moSel").value).length <= 1) return;   // always keep at least one week
   if(dir < 0) extraB--; else extraA--;
   loadDaily().then(renderWorksheet);
 }
 
 async function loadDaily(){
-  const fr = periodFridays($("moSel").value);
+  const fr = periodWeekEnds($("moSel").value);
   if(!fr.length) return;
   const { data, error } = await sb.from("fringe_daily_hours").select("*")
     .gte("work_date", addDays(fr[0], -6)).lte("work_date", fr[fr.length - 1]);
   if(error){ alert("Load error: " + error.message); return; }
-  daily = {}; employees.forEach(e => daily[e.id] = {});
-  (data || []).forEach(x => { if(daily[x.employee_id]) daily[x.employee_id][x.work_date] = Number(x.hours); });
+  daily = {}; codes = {};
+  employees.forEach(e => { daily[e.id] = {}; codes[e.id] = {}; });
+  (data || []).forEach(x => {
+    if(!daily[x.employee_id]) return;
+    daily[x.employee_id][x.work_date] = Number(x.hours);
+    if(x.code) codes[x.employee_id][x.work_date] = x.code;
+  });
 }
 
 function weekDays(fri){ return DAY_LABELS.map((_, i) => addDays(fri, i - 6)); }
 
 function renderWorksheet(){
-  const fr = periodFridays($("moSel").value);
+  const fr = periodWeekEnds($("moSel").value);
   let html = "";
   for(const fri of fr){
     const days = weekDays(fri);
@@ -388,9 +403,11 @@ function renderWorksheet(){
     for(const emp of employees){
       let et = 0;
       const cells = days.map((iso, i) => {
+        const c = codes[emp.id][iso];
         const v = daily[emp.id][iso];
-        if(v != null){ et += v; colTot[i] += v; }
-        return `<td class="num"><input class="hrs sm" type="number" step="0.25" min="0" value="${v != null ? v : ""}"
+        if(!c && v != null){ et += v; colTot[i] += v; }
+        const shown = c ? c : (v != null ? v : "");
+        return `<td class="num"><input class="hrs sm ${c ? "code" : ""}" type="text" value="${shown}"
                  onchange="saveDaily('${emp.id}','${iso}',this)"></td>`;
       }).join("");
       wkTot += et;
@@ -398,7 +415,7 @@ function renderWorksheet(){
     }
     const totCells = colTot.map(v => `<td class="num">${v ? fmtH(v) : "—"}</td>`).join("");
     html += `<div class="card">
-      <h2>WEEK ENDING ${mdLabel(fri)} <span class="rate">Sat ${mdLabel(days[0])} – Fri ${mdLabel(fri)}</span></h2>
+      <h2>WEEK ENDING ${mdLabel(fri)} <span class="rate">${DAY_LABELS[0]} ${mdLabel(days[0])} – ${DAY_LABELS[6]} ${mdLabel(fri)}</span></h2>
       <table>
         <tr><th>Employee</th>${days.map((iso, i) => `<th class="num">${DAY_LABELS[i]}<br>${mdLabel(iso)}</th>`).join("")}<th class="num">Week total</th></tr>
         ${rows}
@@ -410,43 +427,91 @@ function renderWorksheet(){
   const mo = $("moSel").value;
   let rows = "", allTot = 0;
   for(const emp of employees){
-    let t = 0;
-    fr.forEach(fri => weekDays(fri).forEach(iso => { t += daily[emp.id][iso] || 0; }));
+    let t = 0; const cc = { S: 0, V: 0, H: 0 };
+    fr.forEach(fri => weekDays(fri).forEach(iso => {
+      if(codes[emp.id][iso]){ cc[codes[emp.id][iso]]++; }
+      else t += daily[emp.id][iso] || 0;
+    }));
     allTot += t;
+    const leave = ["S","V","H"].filter(k => cc[k]).map(k => cc[k] + " " + k).join(", ") || "—";
     const monthly = hours[emp.id][mo];
     const match = monthly != null && Math.abs(monthly - t) < 0.005;
     rows += `<tr><td>${emp.full_name}</td><td class="num"><b>${fmtH(t)}</b></td>
+      <td class="num">${leave}</td>
       <td class="num">${monthly != null ? fmtH(monthly) : "—"}</td>
       <td>${monthly == null ? "" : (match ? "&#10003; matches" : `<span class="neg">off by ${fmtH(t - monthly)}</span>`)}</td></tr>`;
   }
   html += `<div class="card">
     <h2>PERIOD TOTALS — ${$("moSel").selectedOptions[0].text}</h2>
     <table>
-      <tr><th>Employee</th><th class="num">Worksheet total</th><th class="num">Monthly report</th><th></th></tr>
+      <tr><th>Employee</th><th class="num">Worksheet hrs</th><th class="num">Leave days</th><th class="num">Monthly report</th><th></th></tr>
       ${rows}
-      <tr class="total"><td>TOTAL</td><td class="num">${fmtH(allTot)}</td><td></td><td></td></tr>
+      <tr class="total"><td>TOTAL</td><td class="num">${fmtH(allTot)}</td><td></td><td></td><td></td></tr>
     </table>
   </div>`;
   $("wsGrid").innerHTML = html;
 }
 
 async function saveDaily(empId, iso, input){
-  const v = input.value === "" ? null : Number(input.value);
-  if(v == null){
+  const raw = input.value.trim().toUpperCase();
+  const restore = () => { input.value = codes[empId][iso] ?? (daily[empId][iso] ?? ""); };
+  if(raw === ""){
     await sb.from("fringe_daily_hours").delete().eq("employee_id", empId).eq("work_date", iso);
-    delete daily[empId][iso]; renderWorksheet(); return;
+    delete daily[empId][iso]; delete codes[empId][iso]; renderWorksheet(); return;
   }
-  if(isNaN(v) || v < 0 || v > 24){ input.value = daily[empId][iso] ?? ""; return; }
+  if(["S","V","H"].includes(raw)){
+    const { error } = await sb.from("fringe_daily_hours")
+      .upsert({ employee_id: empId, work_date: iso, hours: 0, code: raw, updated_at: new Date().toISOString() },
+              { onConflict: "employee_id,work_date" });
+    if(error){ alert("Save failed: " + error.message); restore(); return; }
+    daily[empId][iso] = 0; codes[empId][iso] = raw;
+    renderWorksheet(); return;
+  }
+  const v = Number(raw);
+  if(isNaN(v) || v < 0 || v > 24){ restore(); return; }
   const { error } = await sb.from("fringe_daily_hours")
-    .upsert({ employee_id: empId, work_date: iso, hours: v, updated_at: new Date().toISOString() },
+    .upsert({ employee_id: empId, work_date: iso, hours: v, code: null, updated_at: new Date().toISOString() },
             { onConflict: "employee_id,work_date" });
-  if(error){ alert("Save failed: " + error.message); return; }
-  daily[empId][iso] = v;
+  if(error){ alert("Save failed: " + error.message); restore(); return; }
+  daily[empId][iso] = v; delete codes[empId][iso];
   renderWorksheet();
 }
 
+// Mark empty weekdays with S/V from the leave portal (H is typed by hand).
+// Leave days carry ZERO fringe hours — only clocked hours count toward the funds.
+function empInitials(emp){
+  const parts = emp.full_name.split(",");
+  const first = (parts[1] || "").trim();
+  return ((first[0] || "") + (parts[0].trim()[0] || "")).toLowerCase();
+}
+async function autoFillCodes(){
+  const fr = periodWeekEnds($("moSel").value);
+  const start = addDays(fr[0], -6), end = fr[fr.length - 1];
+  const { data, error } = await pb.from("leave_entries").select("emp_id,date,type").gte("date", start).lte("date", end);
+  if(error){ alert("Couldn't read the leave portal: " + error.message); return 0; }
+  const rows = [];
+  for(const emp of employees){
+    const init = empInitials(emp);
+    for(const le of (data || [])){
+      if((le.emp_id || "").toLowerCase() !== init) continue;
+      const d = le.date, t = (le.type || "").toUpperCase();
+      if(!["S","V","H"].includes(t)) continue;
+      const dow = new Date(d + "T00:00:00Z").getUTCDay();
+      if(dow === 0 || dow === 6) continue;                       // weekends: no fill
+      if((daily[emp.id][d] || 0) > 0 || codes[emp.id][d]) continue; // clocked or already marked
+      rows.push({ employee_id: emp.id, work_date: d, hours: 0, code: t, updated_at: new Date().toISOString() });
+    }
+  }
+  if(rows.length){
+    const { error: e2 } = await sb.from("fringe_daily_hours").upsert(rows, { onConflict: "employee_id,work_date" });
+    if(e2){ alert("Save failed: " + e2.message); return 0; }
+  }
+  await loadDaily();
+  return rows.length;
+}
+
 async function applyTotals(){
-  const mo = $("moSel").value, fr = periodFridays(mo);
+  const mo = $("moSel").value, fr = periodWeekEnds(mo);
   for(const emp of employees){
     let t = 0;
     fr.forEach(fri => weekDays(fri).forEach(iso => { t += daily[emp.id][iso] || 0; }));
@@ -512,7 +577,7 @@ function exportExcel(){
     XLSX.utils.book_append_sheet(wb, ws, fund);
   }
   // DAILY worksheet sheet (included when daily hours exist for the period)
-  const fr = periodFridays(mo);
+  const fr = periodWeekEnds(mo);
   const anyDaily = employees.some(e => fr.some(fri => weekDays(fri).some(iso => daily[e.id] && daily[e.id][iso] != null)));
   if(anyDaily){
     const aoa = [["DAILY HOURS WORKSHEET — " + $("moSel").selectedOptions[0].text]];
@@ -524,7 +589,12 @@ function exportExcel(){
       aoa.push(["EMPLOYEE", ...days.map((iso, i) => DAY_LABELS[i] + " " + mdLabel(iso)), "TOTAL"]);
       employees.forEach((emp, ei) => {
         const r = aoa.length + 1;                     // 1-based row this line will land on
-        aoa.push([emp.full_name, ...days.map(iso => (daily[emp.id] && daily[emp.id][iso]) ?? null), null]);
+        aoa.push([emp.full_name, ...days.map(iso => {
+          const c = codes[emp.id] && codes[emp.id][iso];
+          if(c) return c;
+          const h = daily[emp.id] && daily[emp.id][iso];
+          return h != null ? h : null;
+        }), null]);
         empTotalRefs[ei].push("I" + r);
       });
     }
@@ -551,7 +621,7 @@ function exportExcel(){
 }
 
 async function syncMonth(){
-  const fr = periodFridays($("moSel").value);
+  const fr = periodWeekEnds($("moSel").value);
   const periodStart = addDays(fr[0], -6), periodEnd = fr[fr.length - 1];
   const today = new Date().toISOString().slice(0,10);
   await loadDaily();                                        // know what we already have
@@ -591,9 +661,11 @@ async function doPull(start, end){
     if(error){ alert("Save failed: " + error.message); return; }
   }
   await loadDaily();
+  const filled = await autoFillCodes();
   $("viewSel").value = "sheet";
   render();
   alert(`Pulled ${start} to ${end}: ${rows.length} day entries.` +
+        (filled ? `\nMarked ${filled} leave day(s) (S/V) from the portal.` : "") +
         (unmatched.length ? `\nCouldn't match: ${unmatched.join(", ")}` : "") +
         (rows.length ? `\nReview the worksheet, then tap "Write totals to monthly report".` : "\nNo hours in that range yet."));
 }
