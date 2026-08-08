@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTI — Fringe Benefit Report (Form 3029)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#1b2733; --steel:#2e4157; --paper:#fbfaf7; --line:#c9c4b8;
+    --amber:#c98a12; --ok:#2c6e49; --muted:#6b7686;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Barlow',sans-serif; background:var(--paper); color:var(--ink); font-size:15px;}
+  h1,h2,h3{font-family:'Barlow Condensed',sans-serif; letter-spacing:.02em;}
+  .num{font-variant-numeric:tabular-nums; text-align:right;}
+
+  header.appbar{background:var(--steel); color:#fff; padding:14px 16px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+  header.appbar h1{font-size:22px; font-weight:700; text-transform:uppercase;}
+  header.appbar .sub{color:#c9d3df; font-size:13px;}
+  header.appbar .spacer{flex:1;}
+  header.appbar button{background:transparent; border:1px solid #5b7189; color:#fff; padding:6px 12px; border-radius:4px; font-size:13px;}
+
+  .wrap{max-width:980px; margin:0 auto; padding:16px;}
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:14px;}
+  .controls label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:3px;}
+  .controls select{padding:8px 10px; border:1px solid var(--line); border-radius:4px; background:#fff; font-size:15px;}
+  .controls .grow{flex:1;}
+  .btn{padding:9px 16px; border-radius:4px; border:1px solid var(--steel); background:var(--steel); color:#fff; font-size:14px; font-weight:600; cursor:pointer;}
+  .btn.alt{background:#fff; color:var(--steel);}
+  .btn.amber{background:var(--amber); border-color:var(--amber);}
+
+  .card{background:#fff; border:1px solid var(--line); border-radius:6px; margin-bottom:16px; overflow-x:auto;}
+  .card h2{padding:10px 14px; border-bottom:2px solid var(--ink); font-size:17px; text-transform:uppercase; display:flex; gap:10px; align-items:baseline;}
+  .card h2 .rate{font-family:'Barlow'; font-size:13px; color:var(--muted); font-weight:500;}
+  table{border-collapse:collapse; width:100%; min-width:560px;}
+  th{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  th.num{text-align:right;}
+  td{padding:7px 10px; border-bottom:1px solid #eee9df; white-space:nowrap;}
+  tr.total td{border-top:2px solid var(--ink); border-bottom:none; font-weight:600; background:#f5f2ea;}
+  td input.hrs{width:84px; padding:5px 6px; border:1px solid var(--line); border-radius:4px; font:inherit; text-align:right; font-variant-numeric:tabular-nums;}
+  td input.hrs:focus{outline:2px solid var(--amber); border-color:var(--amber);}
+  .grand{background:var(--steel); color:#fff; border-radius:6px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
+  .grand .amt{font-family:'Barlow Condensed'; font-size:28px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .note{font-size:12px; color:var(--muted); margin:6px 0 16px;}
+  .saved{color:var(--ok); font-size:12px; margin-left:8px;}
+  .neg{color:#a13030;}
+
+  /* Sign-in */
+  #login{max-width:340px; margin:70px auto; background:#fff; border:1px solid var(--line); border-radius:6px; padding:22px;}
+  #login h2{margin-bottom:14px; text-transform:uppercase;}
+  #login input{width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--line); border-radius:4px; font:inherit;}
+  #login .err{color:#a13030; font-size:13px; margin-bottom:8px; min-height:16px;}
+
+  /* Print — this is the sheet that goes with Form 3029 */
+  .printhead{display:none;}
+  @media print{
+    @page{size:letter landscape; margin:.5in;}
+    body{background:#fff; font-size:11px;}
+    header.appbar,.controls,.note,.btn,.saved,#syncRow{display:none !important;}
+    .wrap{max-width:none; padding:0;}
+    .printhead{display:block; border-bottom:3px double var(--ink); padding-bottom:8px; margin-bottom:12px;}
+    .printhead h1{font-size:18px; text-transform:uppercase;}
+    .printhead .meta{display:flex; justify-content:space-between; font-size:11px; margin-top:4px;}
+    .card{border:1px solid var(--ink); border-radius:0; break-inside:avoid; margin-bottom:10px; overflow:visible;}
+    table{min-width:0;}
+    td input.hrs{border:none; padding:0; width:auto;}
+    .grand{background:#fff; color:var(--ink); border:2px solid var(--ink); border-radius:0;}
+    .signline{display:flex; gap:40px; margin-top:24px;}
+    .signline div{flex:1; border-top:1px solid var(--ink); padding-top:4px; font-size:10px; text-transform:uppercase; letter-spacing:.05em;}
+  }
+  .signline{display:none;}
+  @media print{.signline{display:flex;}}
+</style>
+</head>
+<body>
+
+<div id="login" hidden>
+  <h2>Fringe Report Sign-In</h2>
+  <div class="err" id="loginErr"></div>
+  <input type="email" id="email" placeholder="Email" autocomplete="username">
+  <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+  <button class="btn" style="width:100%" onclick="signIn()">Sign in</button>
+</div>
+
+<div id="app" hidden>
+<header class="appbar">
+  <h1>Fringe Benefit Report</h1>
+  <span class="sub">IUOE Local 324 · Section S Shop Agreement · attach to Form 3029</span>
+  <span class="spacer"></span>
+  <button onclick="signOut()">Sign out</button>
+</header>
+
+<div class="wrap">
+  <div class="printhead">
+    <h1>Northern Tire Inc. — Fringe Benefit Contribution Report</h1>
+    <div class="meta">
+      <span>Operating Engineers Local 324 · Section S Shop Agreement · Attachment to Form 3029</span>
+      <span id="printMeta"></span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div><label>Contract year</label><select id="cySel" onchange="loadAll()"></select></div>
+    <div><label>Report month</label><select id="moSel" onchange="render()"></select></div>
+    <div class="grow"></div>
+    <span id="syncRow"><button class="btn alt" onclick="syncMonth()">Sync from time clock</button></span>
+    <button class="btn alt" onclick="exportExcel()">Export Excel</button>
+    <button class="btn amber" onclick="window.print()">Print / Save PDF</button>
+  </div>
+  <p class="note">Type hours in any month cell and it saves automatically. The running totals and payments update on their own — print this page each month and send it with Form 3029.</p>
+
+  <div id="funds"></div>
+
+  <div class="grand"><span>Total remittance due — <span id="grandMonth"></span></span><span class="amt" id="grandAmt">$0.00</span></div>
+
+  <div class="card" id="runningCard"></div>
+
+  <div class="signline">
+    <div>Prepared by / date</div>
+    <div>Authorized signature</div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ==== CONFIG — paste your payroll project's anon key ==== */
+const SUPABASE_URL = "https://ogmvswqcvzohizjfgixm.supabase.co";
+const SUPABASE_ANON_KEY = "PASTE_ANON_KEY_HERE";
+const HEALTH_MAX_HOURS = 2080;
+const FUND_ORDER = ["TRAINING","HEALTH","PENSION"];
+/* ======================================================== */
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const MONTHS = ["JUNE","JULY","AUG","SEPT","OCT","NOV","DEC","JAN","FEB","MARCH","APRIL","MAY"];
+let employees = [], rates = {}, hours = {};   // hours[empId][isoMonth] = number
+
+const $ = id => document.getElementById(id);
+const money = n => "$" + n.toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtH = n => n.toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+const maskSSN = s => "***-**-" + (s||"").slice(-4);
+
+function cyStart(cy){ return parseInt(cy.slice(0,4),10); }
+function cyMonths(cy){                       // 12 ISO first-of-month dates, June..May
+  const y = cyStart(cy);
+  return MONTHS.map((_,i)=> {
+    const m = 6+i, yy = m>12 ? y+1 : y, mm = m>12 ? m-12 : m;
+    return `${yy}-${String(mm).padStart(2,"0")}-01`;
+  });
+}
+
+async function init(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ $("app").hidden=false; buildYearSel(); await loadAll(); }
+  else $("login").hidden=false;
+}
+async function signIn(){
+  const { error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("password").value });
+  if(error){ $("loginErr").textContent = error.message; return; }
+  $("login").hidden=true; $("app").hidden=false; buildYearSel(); await loadAll();
+}
+async function signOut(){ await sb.auth.signOut(); location.reload(); }
+
+function buildYearSel(){
+  const now = new Date();
+  const startY = now.getMonth()+1 >= 6 ? now.getFullYear() : now.getFullYear()-1;
+  const sel = $("cySel"); sel.innerHTML="";
+  for(let y=2026; y<=startY+1; y++){
+    const cy = `${y}-${String((y+1)%100).padStart(2,"0")}`;
+    sel.add(new Option(cy, cy, false, y===startY));
+  }
+}
+
+async function loadAll(){
+  const cy = $("cySel").value;
+  const ms = cyMonths(cy);
+  const [e, r, h] = await Promise.all([
+    sb.from("fringe_employees").select("*").eq("active",true).order("sort_order"),
+    sb.from("fringe_rates").select("*").eq("contract_year",cy),
+    sb.from("fringe_hours").select("*").gte("work_month",ms[0]).lte("work_month",ms[11])
+  ]);
+  if(e.error||r.error||h.error){ alert("Load error: "+(e.error||r.error||h.error).message); return; }
+  employees = e.data;
+  rates = Object.fromEntries(r.data.map(x=>[x.benefit, Number(x.rate)]));
+  hours = {};
+  employees.forEach(emp=> hours[emp.id]={});
+  h.data.forEach(x=>{ if(hours[x.employee_id]) hours[x.employee_id][x.work_month]=Number(x.hours); });
+
+  // month selector: default to latest month that has any hours, else current
+  const moSel = $("moSel"); moSel.innerHTML="";
+  ms.forEach((iso,i)=> moSel.add(new Option(`${MONTHS[i]} ${iso.slice(0,4)}`, iso)));
+  let latest = ms[0];
+  ms.forEach(iso=>{ if(employees.some(emp=>hours[emp.id][iso]!=null)) latest=iso; });
+  moSel.value = latest;
+  render();
+}
+
+function ytdHours(empId, throughIso, ms){
+  let t=0;
+  for(const iso of ms){ if(iso>throughIso) break; t += hours[empId][iso]||0; }
+  return t;
+}
+
+// Health contributions stop at 2,080 hours per contract year (resets June 1).
+// Billable hours for a month = worked hours clamped to what's left under the cap.
+function healthBillable(empId, ms){
+  let cum = 0; const out = {};
+  for(const iso of ms){
+    const h = hours[empId][iso] || 0;
+    const before = Math.min(cum, HEALTH_MAX_HOURS);
+    cum += h;
+    out[iso] = Math.max(0, Math.min(cum, HEALTH_MAX_HOURS) - before);
+  }
+  return out;
+}
+
+function render(){
+  const cy = $("cySel").value, ms = cyMonths(cy), mo = $("moSel").value;
+  const moLabel = $("moSel").selectedOptions[0].text;
+  $("grandMonth").textContent = moLabel;
+  $("printMeta").textContent = `Contract year ${cy} · Report month: ${moLabel} · Printed ${new Date().toLocaleDateString()}`;
+
+  let grand=0, html="";
+  for(const fund of FUND_ORDER){
+    const rate = rates[fund] ?? 0;
+    const health = fund==="HEALTH";
+    let fh=0, fb=0, fp=0, rows="";
+    for(const emp of employees){
+      const hrs = hours[emp.id][mo] ?? "";
+      const worked = Number(hrs)||0;
+      const bill = health ? (healthBillable(emp.id, ms)[mo] || 0) : worked;
+      const pay = Math.round(bill*rate*100)/100;
+      fh += worked; fb += bill; fp += pay;
+      const ytd = ytdHours(emp.id, mo, ms);
+      const capped = health && ytd >= HEALTH_MAX_HOURS;
+      const billTd = health ? `<td class="num ${bill<worked?'neg':''}">${fmtH(bill)}</td>` : "";
+      const extra = health
+        ? `<td class="num">${fmtH(Math.max(0, HEALTH_MAX_HOURS-ytd))}${capped?' <b class="neg">CAPPED</b>':''}</td>` : "";
+      rows += `<tr>
+        <td>${emp.full_name}</td>
+        <td>${maskSSN(emp.ssn)}<span class="printonly"></span></td>
+        <td>${emp.birthdate}</td>
+        <td class="num"><input class="hrs" type="number" step="0.25" min="0" value="${hrs}"
+             onchange="saveHours('${emp.id}','${mo}',this)"></td>${billTd}
+        <td class="num">${rate.toFixed(2)}</td>
+        <td class="num">${money(pay)}</td>
+        <td class="num">${fmtH(ytd)}</td>${extra}
+      </tr>`;
+    }
+    grand += fp;
+    const billTh = health ? `<th class="num">Billable hrs</th>` : "";
+    const billTot = health ? `<td class="num">${fmtH(fb)}</td>` : "";
+    const extraTh = health ? `<th class="num">Remaining (${HEALTH_MAX_HOURS} max)</th>` : "";
+    const extraTd = health ? `<td></td>` : "";
+    const rateNote = health ? ` · no payment past ${HEALTH_MAX_HOURS.toLocaleString()} hrs (resets June 1)` : "";
+    html += `<div class="card">
+      <h2>${fund} FUND <span class="rate">$${rate.toFixed(2)} / hour${rateNote}</span></h2>
+      <table>
+        <tr><th>Employee</th><th>SS#</th><th>Birthdate</th><th class="num">${moLabel} hrs</th>${billTh}<th class="num">Rate</th><th class="num">Payment</th><th class="num">YTD hrs</th>${extraTh}</tr>
+        ${rows}
+        <tr class="total"><td colspan="3">TOTAL</td><td class="num">${fmtH(fh)}</td>${billTot}<td></td><td class="num">${money(fp)}</td><td></td>${extraTd}</tr>
+      </table>
+    </div>`;
+  }
+  $("funds").innerHTML = html;
+  $("grandAmt").textContent = money(grand);
+  renderRunning(cy, ms, mo);
+}
+
+function renderRunning(cy, ms, mo){
+  let head = `<tr><th>Employee</th>` + ms.map((iso,i)=>`<th class="num">${MONTHS[i]}</th>`).join("") + `<th class="num">YTD HRS</th></tr>`;
+  let rows = "";
+  const colTot = ms.map(()=>0); let ytdAll=0;
+  for(const emp of employees){
+    let ytd=0;
+    rows += `<tr><td>${emp.full_name}</td>` + ms.map((iso,i)=>{
+      const v = hours[emp.id][iso];
+      if(v!=null){ ytd+=v; colTot[i]+=v; }
+      return `<td class="num">${v!=null?fmtH(v):"—"}</td>`;
+    }).join("") + `<td class="num"><b>${fmtH(ytd)}</b></td></tr>`;
+    ytdAll += ytd;
+  }
+  rows += `<tr class="total"><td>TOTAL HOURS</td>` + colTot.map(v=>`<td class="num">${v?fmtH(v):"—"}</td>`).join("") + `<td class="num">${fmtH(ytdAll)}</td></tr>`;
+  // contribution running totals per fund (health uses capped billable hours)
+  const billMaps = Object.fromEntries(employees.map(emp => [emp.id, healthBillable(emp.id, ms)]));
+  let contrib = FUND_ORDER.map(fund=>{
+    const rate = rates[fund]??0;
+    const health = fund==="HEALTH";
+    let run=0;
+    const cells = ms.map(iso=>{
+      let mSum=0;
+      employees.forEach(emp=>{
+        const v = health ? billMaps[emp.id][iso] : hours[emp.id][iso];
+        if(v!=null && v!==0) mSum+=Math.round(v*rate*100)/100;
+      });
+      run += mSum;
+      return `<td class="num">${mSum?money(mSum):"—"}</td>`;
+    }).join("");
+    return `<tr><td>${fund} $ </td>${cells}<td class="num"><b>${money(run)}</b></td></tr>`;
+  }).join("");
+  $("runningCard").innerHTML = `<h2>Running totals — contract year ${cy} (June–May)</h2>
+    <table>${head}${rows}${contrib}</table>`;
+}
+
+async function saveHours(empId, iso, input){
+  const v = input.value===""?null:Number(input.value);
+  if(v==null || isNaN(v) || v<0){ input.value = hours[empId][iso] ?? ""; return; }
+  const { error } = await sb.from("fringe_hours")
+    .upsert({ employee_id:empId, work_month:iso, hours:v, source:"manual", updated_at:new Date().toISOString() },
+            { onConflict:"employee_id,work_month" });
+  if(error){ alert("Save failed: "+error.message); return; }
+  hours[empId][iso] = v;
+  render();
+}
+
+function exportExcel(){
+  const cy = $("cySel").value, ms = cyMonths(cy), mo = $("moSel").value;
+  const wb = XLSX.utils.book_new();
+  const col = c => XLSX.utils.encode_col(c);
+  for(const fund of FUND_ORDER){
+    const rate = rates[fund] ?? 0;
+    const health = fund === "HEALTH";
+    const mStart = health ? 8 : 7;                 // first month col index (I or H)
+    const mEnd = mStart + 11;                      // last month col (T or S)
+    const head = ["EMPLOYEE","SS#","BIRTHDATE","HOURS PERIOD","RATE","MONTH PAYMENT"];
+    if(health) head.push("REMAINING HOURS");
+    head.push("YTD HOURS", ...MONTHS.map(m => m + " HRS"));
+    const aoa = [head];
+    const billMap = health ? Object.fromEntries(employees.map(e => [e.id, healthBillable(e.id, ms)])) : null;
+    employees.forEach(emp => {
+      // HEALTH bills capped hours (no payment past the 2,080 cap); month columns show actual worked hours
+      const periodHrs = health ? (billMap[emp.id][mo] || 0) : (hours[emp.id][mo] ?? 0);
+      const row = [emp.full_name, emp.ssn, new Date(emp.birthdate + "T00:00:00"),
+                   periodHrs, rate, null];
+      if(health) row.push(null);
+      row.push(null, ...ms.map(iso => hours[emp.id][iso] ?? null));
+      aoa.push(row);
+    });
+    const tr = employees.length + 2;               // total row number
+    const trow = ["","", fund === "PENSION" ? "TOTAL HOURS" : "TOTAL", health ? null : "", "", null];
+    if(health) trow.push("2080 MAX HOURS");
+    trow.push("TOTAL DUE");
+    aoa.push(trow);
+    const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates:true });
+    employees.forEach((_, i) => {
+      const r = i + 2;
+      ws["F" + r] = { t:"n", f:`D${r}*E${r}`, z:"0.00" };
+      ws[col(mStart - 1) + r] = { t:"n", f:`SUM(${col(mStart)}${r}:${col(mEnd)}${r})`, z:"0.00" }; // YTD
+      if(health) ws["G" + r] = { t:"n", f:`MAX(0,${HEALTH_MAX_HOURS}-SUM(${col(mStart)}${r}:${col(mEnd)}${r}))`, z:"0.00" };
+    });
+    ws["F" + tr] = { t:"n", f:`SUM(F2:F${tr - 1})`, z:"0.00" };
+    if(health) ws["D" + tr] = { t:"n", f:`SUM(D2:D${tr - 1})`, z:"0.00" };
+    ws["!cols"] = head.map((h, i) => ({ wch: i === 0 ? 22 : i <= 2 ? 13 : 11 }));
+    XLSX.utils.book_append_sheet(wb, ws, fund);
+  }
+  const y = String(cyStart(cy) % 100), y2 = String((cyStart(cy) + 1) % 100).padStart(2, "0");
+  XLSX.writeFile(wb, `EMPLOYEE_INSURANCE_PENSION_${y}_TO_${y2}.xlsx`);
+}
+
+async function syncMonth(){
+  const mo = $("moSel").value;
+  const { error } = await sb.rpc("sync_fringe_hours", { p_month: mo });
+  if(error){ alert("Sync error: "+error.message); return; }
+  await loadAll();
+}
+
+init();
+</script>
+</body>
+</html>
