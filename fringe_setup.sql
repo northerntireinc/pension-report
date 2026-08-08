@@ -74,18 +74,19 @@ on conflict (full_name) do nothing;
 --   where full_name = 'FORBES, JEREMY M.';
 
 -- ------------------------------------------------------------
--- Seed: June + July 2026 hours (from your workbook)
+-- Seed: June + July 2026 hours (July corrected -0.50/employee
+-- for the TimeStation error week ending 7/24)
 -- ------------------------------------------------------------
 insert into fringe_hours (employee_id, work_month, hours, source)
 select id, d.m::date, d.h, 'manual'
 from fringe_employees e
 join (values
   ('FORBES, JEREMY M.',  '2026-06-01', 173.50),
-  ('FORBES, JEREMY M.',  '2026-07-01', 218.00),
+  ('FORBES, JEREMY M.',  '2026-07-01', 217.50),
   ('KERTSCHER, JEFFERY', '2026-06-01', 163.75),
-  ('KERTSCHER, JEFFERY', '2026-07-01', 206.50),
+  ('KERTSCHER, JEFFERY', '2026-07-01', 206.00),
   ('JOHNSON, BODE',      '2026-06-01', 168.75),
-  ('JOHNSON, BODE',      '2026-07-01', 210.75)
+  ('JOHNSON, BODE',      '2026-07-01', 210.25)
 ) as d(name, m, h) on d.name = e.full_name
 on conflict (employee_id, work_month) do update set hours = excluded.hours;
 
@@ -94,6 +95,15 @@ on conflict (employee_id, work_month) do update set hours = excluded.hours;
 -- Replace time_entries / clock_in / clock_out / employee match
 -- with your actual kiosk table + columns, then the report page's
 -- "Sync from time clock" button fills the month automatically.
+--
+-- IMPORTANT — fringe hours rule (effective Aug 2026 forward):
+-- Fringe hours for all 3 funds = RAW clocked hours only.
+-- The 0.5 hr/day break credit is wages-only (TimeStation adds it,
+-- stacking per 6 consecutive hours) — it is paid in payroll but
+-- NO fringe contributions are owed on any credit hours.
+-- When building this query, sum actual punch time only; do not
+-- include TimeStation's credited totals.
+-- June/July 2026 stay as booked — do not restate past months.
 -- ============================================================
 create or replace function sync_fringe_hours(p_month date)
 returns void
