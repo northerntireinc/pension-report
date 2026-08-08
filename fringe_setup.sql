@@ -74,19 +74,19 @@ on conflict (full_name) do nothing;
 --   where full_name = 'FORBES, JEREMY M.';
 
 -- ------------------------------------------------------------
--- Seed: June + July 2026 hours (July corrected -0.50/employee
--- for the TimeStation error week ending 7/24)
+-- Seed: June + July 2026 hours (July = confirmed actuals after
+-- fixing the TimeStation glitch that was reducing hours)
 -- ------------------------------------------------------------
 insert into fringe_hours (employee_id, work_month, hours, source)
 select id, d.m::date, d.h, 'manual'
 from fringe_employees e
 join (values
   ('FORBES, JEREMY M.',  '2026-06-01', 173.50),
-  ('FORBES, JEREMY M.',  '2026-07-01', 217.50),
+  ('FORBES, JEREMY M.',  '2026-07-01', 218.50),
   ('KERTSCHER, JEFFERY', '2026-06-01', 163.75),
-  ('KERTSCHER, JEFFERY', '2026-07-01', 206.00),
+  ('KERTSCHER, JEFFERY', '2026-07-01', 207.00),
   ('JOHNSON, BODE',      '2026-06-01', 168.75),
-  ('JOHNSON, BODE',      '2026-07-01', 210.25)
+  ('JOHNSON, BODE',      '2026-07-01', 210.75)
 ) as d(name, m, h) on d.name = e.full_name
 on conflict (employee_id, work_month) do update set hours = excluded.hours;
 
