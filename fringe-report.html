@@ -42,6 +42,7 @@
   td{padding:7px 10px; border-bottom:1px solid #eee9df; white-space:nowrap;}
   tr.total td{border-top:2px solid var(--ink); border-bottom:none; font-weight:600; background:#f5f2ea;}
   td input.hrs{width:84px; padding:5px 6px; border:1px solid var(--line); border-radius:4px; font:inherit; text-align:right; font-variant-numeric:tabular-nums;}
+  td input.hrs.sm{width:54px; padding:5px 4px;}
   td input.hrs:focus{outline:2px solid var(--amber); border-color:var(--amber);}
   .grand{background:var(--steel); color:#fff; border-radius:6px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
   .grand .amt{font-family:'Barlow Condensed'; font-size:28px; font-weight:700; font-variant-numeric:tabular-nums;}
@@ -98,7 +99,7 @@
 
 <div class="wrap">
   <div class="printhead">
-    <h1>Northern Tire Inc. — Fringe Benefit Contribution Report</h1>
+    <h1 id="printTitle">Northern Tire Inc. — Fringe Benefit Contribution Report</h1>
     <div class="meta">
       <span>Operating Engineers Local 324 · Section S Shop Agreement · Attachment to Form 3029</span>
       <span id="printMeta"></span>
@@ -108,6 +109,10 @@
   <div class="controls">
     <div><label>Contract year</label><select id="cySel" onchange="loadAll()"></select></div>
     <div><label>Report month</label><select id="moSel" onchange="render()"></select></div>
+    <div><label>View</label><select id="viewSel" onchange="render()">
+      <option value="report">Monthly report</option>
+      <option value="sheet">Daily worksheet</option>
+    </select></div>
     <div class="grow"></div>
     <span id="syncRow"><button class="btn alt" onclick="syncMonth()">Sync from time clock</button></span>
     <button class="btn alt" onclick="exportExcel()">Export Excel</button>
@@ -115,11 +120,24 @@
   </div>
   <p class="note">Type hours in any month cell and it saves automatically. The running totals and payments update on their own — print this page each month and send it with Form 3029.</p>
 
-  <div id="funds"></div>
+  <div id="reportView">
+    <div id="funds"></div>
 
-  <div class="grand"><span>Total remittance due — <span id="grandMonth"></span></span><span class="amt" id="grandAmt">$0.00</span></div>
+    <div class="grand"><span>Total remittance due — <span id="grandMonth"></span></span><span class="amt" id="grandAmt">$0.00</span></div>
 
-  <div class="card" id="runningCard"></div>
+    <div class="card" id="runningCard"></div>
+  </div>
+
+  <div id="sheetView" hidden>
+    <div class="controls">
+      <button class="btn alt" onclick="extendWeek(-1)">+ Week before</button>
+      <button class="btn alt" onclick="extendWeek(1)">+ Week after</button>
+      <span class="grow"></span>
+      <button class="btn" onclick="applyTotals()">Write totals to monthly report</button>
+    </div>
+    <p class="note">Type each man's hours per day. Weeks run Saturday&ndash;Friday (week ending Friday). Use the week buttons if this period includes a trailing week from the prior month. "Write totals" fills the monthly report from this sheet.</p>
+    <div id="wsGrid"></div>
+  </div>
 
   <div class="signline">
     <div>Prepared by / date</div>
@@ -222,11 +240,21 @@ function healthBillable(empId, ms){
   return out;
 }
 
+let daily={}, extraB=0, extraA=0, wsMonth=null;
+
 function render(){
   const cy = $("cySel").value, ms = cyMonths(cy), mo = $("moSel").value;
   const moLabel = $("moSel").selectedOptions[0].text;
+  const view = $("viewSel").value;
+  if(mo !== wsMonth){ wsMonth = mo; extraB = 0; extraA = 0; }
+  $("reportView").hidden = view !== "report";
+  $("sheetView").hidden = view !== "sheet";
+  $("printTitle").textContent = view === "sheet"
+    ? "Northern Tire Inc. — Daily Hours Worksheet"
+    : "Northern Tire Inc. — Fringe Benefit Contribution Report";
   $("grandMonth").textContent = moLabel;
   $("printMeta").textContent = `Contract year ${cy} · Report month: ${moLabel} · Printed ${new Date().toLocaleDateString()}`;
+  if(view === "sheet"){ loadDaily().then(renderWorksheet); }
 
   let grand=0, html="";
   for(const fund of FUND_ORDER){
@@ -310,6 +338,119 @@ function renderRunning(cy, ms, mo){
     <table>${head}${rows}${contrib}</table>`;
 }
 
+/* ===== Daily hours worksheet (backs up the monthly 3029 totals) ===== */
+const DAY_LABELS = ["SAT","SUN","MON","TUE","WED","THU","FRI"];
+function addDays(iso, n){ const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
+function mdLabel(iso){ const [,m,dd] = iso.split("-"); return Number(m) + "/" + Number(dd); }
+
+function periodFridays(mo){                 // Fridays (week endings) in the month, plus extended weeks
+  const [y, m] = mo.split("-").map(Number);
+  const fr = [];
+  const d = new Date(Date.UTC(y, m - 1, 1));
+  while(d.getUTCMonth() === m - 1){
+    if(d.getUTCDay() === 5) fr.push(d.toISOString().slice(0,10));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  for(let i = 0; i < extraB; i++) fr.unshift(addDays(fr[0], -7));
+  for(let i = 0; i < extraA; i++) fr.push(addDays(fr[fr.length - 1], 7));
+  return fr;
+}
+
+async function loadDaily(){
+  const fr = periodFridays($("moSel").value);
+  if(!fr.length) return;
+  const { data, error } = await sb.from("fringe_daily_hours").select("*")
+    .gte("work_date", addDays(fr[0], -6)).lte("work_date", fr[fr.length - 1]);
+  if(error){ alert("Load error: " + error.message); return; }
+  daily = {}; employees.forEach(e => daily[e.id] = {});
+  (data || []).forEach(x => { if(daily[x.employee_id]) daily[x.employee_id][x.work_date] = Number(x.hours); });
+}
+
+function weekDays(fri){ return DAY_LABELS.map((_, i) => addDays(fri, i - 6)); }
+
+function renderWorksheet(){
+  const fr = periodFridays($("moSel").value);
+  let html = "";
+  for(const fri of fr){
+    const days = weekDays(fri);
+    let rows = "", colTot = days.map(() => 0), wkTot = 0;
+    for(const emp of employees){
+      let et = 0;
+      const cells = days.map((iso, i) => {
+        const v = daily[emp.id][iso];
+        if(v != null){ et += v; colTot[i] += v; }
+        return `<td class="num"><input class="hrs sm" type="number" step="0.25" min="0" value="${v != null ? v : ""}"
+                 onchange="saveDaily('${emp.id}','${iso}',this)"></td>`;
+      }).join("");
+      wkTot += et;
+      rows += `<tr><td>${emp.full_name}</td>${cells}<td class="num"><b>${fmtH(et)}</b></td></tr>`;
+    }
+    const totCells = colTot.map(v => `<td class="num">${v ? fmtH(v) : "—"}</td>`).join("");
+    html += `<div class="card">
+      <h2>WEEK ENDING ${mdLabel(fri)} <span class="rate">Sat ${mdLabel(days[0])} – Fri ${mdLabel(fri)}</span></h2>
+      <table>
+        <tr><th>Employee</th>${days.map((iso, i) => `<th class="num">${DAY_LABELS[i]}<br>${mdLabel(iso)}</th>`).join("")}<th class="num">Week total</th></tr>
+        ${rows}
+        <tr class="total"><td>TOTAL</td>${totCells}<td class="num">${fmtH(wkTot)}</td></tr>
+      </table>
+    </div>`;
+  }
+  // period totals vs monthly report
+  const mo = $("moSel").value;
+  let rows = "", allTot = 0;
+  for(const emp of employees){
+    let t = 0;
+    fr.forEach(fri => weekDays(fri).forEach(iso => { t += daily[emp.id][iso] || 0; }));
+    allTot += t;
+    const monthly = hours[emp.id][mo];
+    const match = monthly != null && Math.abs(monthly - t) < 0.005;
+    rows += `<tr><td>${emp.full_name}</td><td class="num"><b>${fmtH(t)}</b></td>
+      <td class="num">${monthly != null ? fmtH(monthly) : "—"}</td>
+      <td>${monthly == null ? "" : (match ? "&#10003; matches" : `<span class="neg">off by ${fmtH(t - monthly)}</span>`)}</td></tr>`;
+  }
+  html += `<div class="card">
+    <h2>PERIOD TOTALS — ${$("moSel").selectedOptions[0].text}</h2>
+    <table>
+      <tr><th>Employee</th><th class="num">Worksheet total</th><th class="num">Monthly report</th><th></th></tr>
+      ${rows}
+      <tr class="total"><td>TOTAL</td><td class="num">${fmtH(allTot)}</td><td></td><td></td></tr>
+    </table>
+  </div>`;
+  $("wsGrid").innerHTML = html;
+}
+
+async function saveDaily(empId, iso, input){
+  const v = input.value === "" ? null : Number(input.value);
+  if(v == null){
+    await sb.from("fringe_daily_hours").delete().eq("employee_id", empId).eq("work_date", iso);
+    delete daily[empId][iso]; renderWorksheet(); return;
+  }
+  if(isNaN(v) || v < 0 || v > 24){ input.value = daily[empId][iso] ?? ""; return; }
+  const { error } = await sb.from("fringe_daily_hours")
+    .upsert({ employee_id: empId, work_date: iso, hours: v, updated_at: new Date().toISOString() },
+            { onConflict: "employee_id,work_date" });
+  if(error){ alert("Save failed: " + error.message); return; }
+  daily[empId][iso] = v;
+  renderWorksheet();
+}
+
+function extendWeek(dir){ if(dir < 0) extraB++; else extraA++; loadDaily().then(renderWorksheet); }
+
+async function applyTotals(){
+  const mo = $("moSel").value, fr = periodFridays(mo);
+  for(const emp of employees){
+    let t = 0;
+    fr.forEach(fri => weekDays(fri).forEach(iso => { t += daily[emp.id][iso] || 0; }));
+    t = Math.round(t * 100) / 100;
+    const { error } = await sb.from("fringe_hours")
+      .upsert({ employee_id: emp.id, work_month: mo, hours: t, source: "worksheet", updated_at: new Date().toISOString() },
+              { onConflict: "employee_id,work_month" });
+    if(error){ alert("Save failed: " + error.message); return; }
+    hours[emp.id][mo] = t;
+  }
+  renderWorksheet();
+}
+
 async function saveHours(empId, iso, input){
   const v = input.value===""?null:Number(input.value);
   if(v==null || isNaN(v) || v<0){ input.value = hours[empId][iso] ?? ""; return; }
@@ -360,6 +501,41 @@ function exportExcel(){
     if(health) ws["D" + tr] = { t:"n", f:`SUM(D2:D${tr - 1})`, z:"0.00" };
     ws["!cols"] = head.map((h, i) => ({ wch: i === 0 ? 22 : i <= 2 ? 13 : 11 }));
     XLSX.utils.book_append_sheet(wb, ws, fund);
+  }
+  // DAILY worksheet sheet (included when daily hours exist for the period)
+  const fr = periodFridays(mo);
+  const anyDaily = employees.some(e => fr.some(fri => weekDays(fri).some(iso => daily[e.id] && daily[e.id][iso] != null)));
+  if(anyDaily){
+    const aoa = [["DAILY HOURS WORKSHEET — " + $("moSel").selectedOptions[0].text]];
+    const empTotalRefs = employees.map(() => []);
+    for(const fri of fr){
+      const days = weekDays(fri);
+      aoa.push([]);
+      aoa.push(["WEEK ENDING " + fri]);
+      aoa.push(["EMPLOYEE", ...days.map((iso, i) => DAY_LABELS[i] + " " + mdLabel(iso)), "TOTAL"]);
+      employees.forEach((emp, ei) => {
+        const r = aoa.length + 1;                     // 1-based row this line will land on
+        aoa.push([emp.full_name, ...days.map(iso => (daily[emp.id] && daily[emp.id][iso]) ?? null), null]);
+        empTotalRefs[ei].push("I" + r);
+      });
+    }
+    aoa.push([]);
+    aoa.push(["PERIOD TOTALS"]);
+    employees.forEach((emp, ei) => { aoa.push([emp.full_name, null]); });
+    const dws = XLSX.utils.aoa_to_sheet(aoa);
+    // weekly total formulas (column I) and period total formulas
+    let rowPtr = 0;
+    for(const fri of fr){
+      rowPtr += 3;                                    // blank + week title + header
+      employees.forEach(() => { rowPtr += 1; dws["I" + (rowPtr + 1)] = { t: "n", f: `SUM(B${rowPtr + 1}:H${rowPtr + 1})`, z: "0.00" }; });
+    }
+    rowPtr += 2;                                      // blank + PERIOD TOTALS title
+    employees.forEach((emp, ei) => {
+      rowPtr += 1;
+      dws["B" + (rowPtr + 1)] = { t: "n", f: empTotalRefs[ei].join("+"), z: "0.00" };
+    });
+    dws["!cols"] = [{ wch: 22 }, ...DAY_LABELS.map(() => ({ wch: 9 })), { wch: 9 }];
+    XLSX.utils.book_append_sheet(wb, dws, "DAILY");
   }
   const y = String(cyStart(cy) % 100), y2 = String((cyStart(cy) + 1) % 100).padStart(2, "0");
   XLSX.writeFile(wb, `EMPLOYEE_INSURANCE_PENSION_${y}_TO_${y2}.xlsx`);
