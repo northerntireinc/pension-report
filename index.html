@@ -2076,12 +2076,17 @@ function classifyEmpWeek(empId,wp){
   var reg=0,ot=0,dt=0,total=0;
   if(keys.length){
     keys.forEach(function(iso){
-      var h=Number(days[iso])||0; if(h<=0) return; total+=h;
-      if(weekIsPremium(iso,wp)){ dt+=h; return; }   /* Sunday/holiday: all hours 2x */
+      var h=Number(days[iso])||0; if(h<=0) return;
+      var dow=weekDow(iso), prem=weekIsPremium(iso,wp);
+      if((dow===6||prem) && h<4) h=4;               /* weekend/holiday call-out: 4-hr contract minimum */
+      total+=h;
+      if(prem){ dt+=h; return; }                    /* Sunday/holiday: all hours 2x */
+      if(dow===6){ ot+=h; return; }                 /* Saturday: all hours OT 1.5x */
       reg+=Math.min(8,h);                            /* first 8 = regular */
       ot +=Math.max(0,Math.min(12,h)-8);             /* 8–12 = OT 1.5x */
       dt +=Math.max(0,h-12);                         /* over 12 = DT 2x */
     });
+    if(reg>40){ ot+=reg-40; reg=40; }               /* weekly law: regular caps at 40, excess is OT */
     return {reg:reg,ot:ot,dt:dt,total:total,dated:true};
   }
   /* no daily detail — fall back to the weekly total as straight time */
