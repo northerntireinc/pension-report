@@ -86,14 +86,14 @@
   <input type="email" id="email" placeholder="Email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
   <input type="password" id="password" placeholder="Password" autocomplete="current-password">
   <button class="btn" style="width:100%" onclick="signIn()">Sign in</button>
-  <p style="margin-top:12px;text-align:center"><a href="index.html" style="color:var(--steel);font-size:13px">&#8592; Back to Pension App</a><br><span style="color:var(--muted);font-size:11px">build v14</span></p>
+  <p style="margin-top:12px;text-align:center"><a href="index.html" style="color:var(--steel);font-size:13px">&#8592; Back to Pension App</a><br><span style="color:var(--muted);font-size:11px">build v15</span></p>
 </div>
 
 <div id="app" hidden>
 <header class="appbar">
   <button onclick="location.href='index.html'">&#8592; Pension App</button>
   <h1>Fringe Benefit Report</h1>
-  <span class="sub">IUOE Local 324 · Section S Shop Agreement · attach to Form 3029 · <b>build v14</b></span>
+  <span class="sub">IUOE Local 324 · Section S Shop Agreement · attach to Form 3029 · <b>build v15</b></span>
   <span class="spacer"></span>
   <button onclick="signOut()">Sign out</button>
 </header>
@@ -139,7 +139,7 @@
       <span class="grow"></span>
       <button class="btn" onclick="applyTotals()">Write totals to monthly report</button>
     </div>
-    <p class="note">Type hours per day, or type <b>S</b> (sick), <b>V</b> (vacation), or <b>H</b> (holiday) in a day's box. "Fill leave codes" (and every TimeStation pull) marks S/V days automatically from the leave portal; company holidays fill from the holiday list. A code alone counts <b>8 hours</b> toward the funds; type <b>S4</b> for a 4-hour sick day. Weeks run Sunday&ndash;Saturday to match TimeStation. A removed week keeps its saved hours; it just doesn't count in this period. "Write totals" fills the monthly report from the weeks shown.</p>
+    <p class="note">Type hours per day, or type <b>S</b> (sick), <b>V</b> (vacation), or <b>H</b> (holiday) in a day's box. "Fill leave codes" (and every TimeStation pull) marks S/V days automatically from the leave portal; company holidays fill from the holiday list. Weekend call-outs under 4 hours bump to the 4-hr contract minimum on pull. A code alone counts <b>8 hours</b> toward the funds; type <b>S4</b> for a 4-hour sick day. Weeks run Sunday&ndash;Saturday to match TimeStation. A removed week keeps its saved hours; it just doesn't count in this period. "Write totals" fills the monthly report from the weeks shown.</p>
     <div id="wsGrid"></div>
   </div>
 
@@ -350,6 +350,7 @@ function renderRunning(cy, ms, mo){
 /* ===== Daily hours worksheet (backs up the monthly 3029 totals) ===== */
 const WEEK_START_DAY = 0;   // 0 = Sunday (matches TimeStation's Sun–Sat week). Change to 6 for Sat–Fri.
 const LEAVE_DAY_HOURS = 8;  // hours credited to the funds for a full S/V/H day
+const CALLOUT_MIN_HOURS = 4; // contract minimum for weekend service call-outs — short weekend days bump up to this
 const WEEK_END_DAY = (WEEK_START_DAY + 6) % 7;
 const DAY_NAMES = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
 const DAY_LABELS = Array.from({length: 7}, (_, i) => DAY_NAMES[(WEEK_START_DAY + i) % 7]);
@@ -663,13 +664,19 @@ async function doPull(start, end){
     data = await res.json();
   }catch(e){ alert("Could not reach TimeStation sync: " + e.message); return; }
   if(data.error){ alert("TimeStation: " + data.error); return; }
-  const rows = [], unmatched = [];
+  const rows = [], unmatched = [], bumped = [];
   for(const ts of (data.employees || [])){
     const tname = (ts.name || "").toUpperCase();
     const emp = employees.find(e => tname.includes(e.full_name.split(",")[0].trim().toUpperCase()));
     if(!emp){ if(ts.hours > 0) unmatched.push(ts.name); continue; }
     for(const d in (ts.days || {})){
-      rows.push({ employee_id: emp.id, work_date: d, hours: ts.days[d], code: null, updated_at: new Date().toISOString() });
+      let h = ts.days[d];
+      const dow = new Date(d + "T00:00:00Z").getUTCDay();
+      if((dow === 0 || dow === 6) && h > 0 && h < CALLOUT_MIN_HOURS){
+        bumped.push(`${emp.full_name.split(",")[0]} ${d}: ${h} → ${CALLOUT_MIN_HOURS}`);
+        h = CALLOUT_MIN_HOURS;
+      }
+      rows.push({ employee_id: emp.id, work_date: d, hours: h, code: null, updated_at: new Date().toISOString() });
     }
   }
   if(rows.length){
@@ -681,6 +688,7 @@ async function doPull(start, end){
   $("viewSel").value = "sheet";
   render();
   alert(`Pulled ${start} to ${end}: ${rows.length} day entries.` +
+        (bumped.length ? `\nApplied ${CALLOUT_MIN_HOURS}-hr call-out minimum: ${bumped.join("; ")}` : "") +
         (filled ? `\nMarked ${filled} leave day(s) (S/V) from the portal.` : "") +
         (unmatched.length ? `\nCouldn't match: ${unmatched.join(", ")}` : "") +
         (rows.length ? `\nReview the worksheet, then tap "Write totals to monthly report".` : "\nNo hours in that range yet."));
