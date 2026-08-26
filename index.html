@@ -2130,12 +2130,17 @@ function portalIdFor(emp){
 function portalOn(){ return !!(S.settings.portal && S.settings.portal.ts); }
 function portalYear(wp){ return (wp&&wp.end)?String(wp.end).slice(0,4):String(new Date().getFullYear()); }
 function usedFor(emp){ var p=S.settings.portal||{}; return (p.used&&p.used[portalIdFor(emp)])||{S:0,V:0}; }
+function rnd2(n){ return Math.round((Number(n)||0)*100)/100; }
+function sickAllotFor(emp){
+  /* contract default is 5 sick days/yr (resets June 1), but the portal is the
+     system of record — a prorated first year or carryover comes from there. */
+  return (emp.sickAllot!=null&&emp.sickAllot!=="")?Number(emp.sickAllot):5;
+}
 function leftFor(emp){
-  /* contract: every union employee gets 5 sick days/yr (resets June 1). Fixed. */
-  var sa=5;
+  var sa=sickAllotFor(emp);
   var va=(emp.vacAllot!=null&&emp.vacAllot!=="")?Number(emp.vacAllot):0;
   var u=portalOn()?usedFor(emp):{S:0,V:0};
-  return { sick:Math.max(0,sa-(u.S||0)), vac:Math.max(0,va-(u.V||0)) };
+  return { sick:rnd2(Math.max(0,sa-(u.S||0))), vac:rnd2(Math.max(0,va-(u.V||0))) };
 }
 function portalEntryType(emp,iso){ var p=S.settings.portal||{}; var e=(p.entries&&p.entries[portalIdFor(emp)])||{}; return e[iso]||""; }
 function leaveAllocFor(emp,wp){
@@ -2180,29 +2185,50 @@ window.portalImport=async function(){
   try{
     var j=await portalCall("?action=summary");
     var al={}; ((j&&j.allotments)||[]).forEach(function(a){ al[String(a.emp_id).toLowerCase()]={sick:Number(a.sick)||0,vac:Number(a.vac)||0}; });
-    var wp=S.settings.weekPull, ref=(wp&&wp.end)?String(wp.end):isoD(new Date());
-    var ry=+ref.slice(0,4), rm=+ref.slice(5,7);
-    var sickStart=(rm>=6?ry:ry-1)+"-06-01";   /* sick year resets June 1 */
-    var vacStart=ry+"-01-01";                   /* vacation resets Jan 1 (calendar) */
-    var used={}, entries={};
+    /* Leave years are anchored to TODAY, not to whichever pull week happens to be
+       loaded, and both ends are bounded so a day outside the year can't be counted. */
+    var today=isoD(new Date());
+    var ry=+today.slice(0,4), rm=+today.slice(5,7);
+    var sickStart=(rm>=6?ry:ry-1)+"-06-01", sickEnd=(rm>=6?ry+1:ry)+"-05-31";   /* sick year: June 1 – May 31 */
+    var vacStart=ry+"-01-01",              vacEnd=ry+"-12-31";                  /* vacation year: calendar */
+    var used={}, entries={}, seen={}, sched=0, dupes=0;
     ((j&&j.entries)||[]).forEach(function(e){
-      var pid=String(e.emp_id).toLowerCase(), dt=String(e.date), ty=String(e.type).toUpperCase().charAt(0);
+      var pid=String(e.emp_id).toLowerCase(), dt=String(e.date).slice(0,10), ty=String(e.type).toUpperCase().charAt(0);
       if(!entries[pid]) entries[pid]={}; entries[pid][dt]=ty;
       if(!used[pid])used[pid]={S:0,V:0};
-      if(ty==="S" && dt>=sickStart) used[pid].S++;
-      else if(ty==="V" && dt>=vacStart) used[pid].V++;
+      var k=pid+"|"+dt; if(seen[k]){ dupes++; return; } seen[k]=1;   /* one row per employee per day */
+      /* honor part days: portal may send days, or hours, else assume a whole day */
+      var qty=(e.days!=null&&e.days!=="")?Number(e.days):((e.hours!=null&&e.hours!=="")?Number(e.hours)/8:1);
+      if(!isFinite(qty)||qty<=0) qty=1;
+      if(dt>today){ sched++; return; }                 /* scheduled ahead — not used yet */
+      if(ty==="S" && dt>=sickStart && dt<=sickEnd) used[pid].S+=qty;
+      else if(ty==="V" && dt>=vacStart && dt<=vacEnd) used[pid].V+=qty;
     });
-    S.settings.portal={ ts:new Date().toISOString(), sickStart:sickStart, vacStart:vacStart, used:used, entries:entries };
-    S.employees.forEach(function(emp){ var a=al[portalIdFor(emp)]; if(a){ emp.sickAllot=a.sick; emp.vacAllot=a.vac; } });
+    Object.keys(used).forEach(function(p){ used[p].S=rnd2(used[p].S); used[p].V=rnd2(used[p].V); });
+    /* cross-check the local leave log against the portal: same day, different code */
+    var conflicts=[];
+    S.employees.forEach(function(emp){
+      var pid=portalIdFor(emp), LG=(S.settings.leaveLog&&S.settings.leaveLog[emp.id])||{}, pe=entries[pid]||{};
+      Object.keys(LG).forEach(function(iso){
+        if(pe[iso] && pe[iso]!==LG[iso] && LG[iso]!=="U") conflicts.push(lastName(emp.name)+" "+iso+": portal "+pe[iso]+", this app "+LG[iso]);
+      });
+    });
+    S.settings.leaveConflicts=conflicts;
+    S.settings.portal={ ts:new Date().toISOString(), sickStart:sickStart, sickEnd:sickEnd, vacStart:vacStart, vacEnd:vacEnd, used:used, entries:entries };
+    S.employees.forEach(function(emp){ var a=al[portalIdFor(emp)]; if(a){ if(a.sick!=null)emp.sickAllot=a.sick; if(a.vac!=null)emp.vacAllot=a.vac; } });
     persist(); renderReport();
-    alert("Imported from portal — allotments and "+(((j&&j.entries)||[]).length)+" leave day(s) (year "+ry+").");
+    alert("Imported from portal — allotments and "+(((j&&j.entries)||[]).length)+" leave day(s).\n"
+      +"Sick year "+sickStart+" to "+sickEnd+"\nVacation year "+vacStart+" to "+vacEnd
+      +(sched?"\n"+sched+" day(s) scheduled ahead — not counted as used yet.":"")
+      +(dupes?"\n"+dupes+" duplicate row(s) in the portal ignored.":"")
+      +(conflicts.length?"\n\nSame day coded two ways — the portal wins:\n"+conflicts.join("\n"):""));
   }catch(e){ alert("Portal import failed: "+(e.message||e)); }
 };
 window.onPortalId=function(empId,val){ var emp=S.employees.filter(function(e){return e.id===empId;})[0]; if(!emp)return; emp.portalId=String(val||"").trim().toLowerCase(); persist(); renderWeekBox(); };
 window.onAllot=function(empId,field,val){
   var emp=S.employees.filter(function(e){return e.id===empId;})[0]; if(!emp)return;
   var v=Number(val); emp[field]=(isFinite(v)&&v>=0)?v:0; persist();
-  portalCall("?action=set-allot",{emp_id:portalIdFor(emp),sick:Number(emp.sickAllot)||0,vac:Number(emp.vacAllot)||0}).catch(function(){});
+  portalCall("?action=set-allot",{emp_id:portalIdFor(emp),sick:sickAllotFor(emp),vac:Number(emp.vacAllot)||0}).catch(function(){});
   if(!(S.settings.weekPull&&S.settings.weekPull.applied)) renderWeekBox();
 };
 window.portalSendWeek=async function(){
@@ -2224,7 +2250,12 @@ window.portalSendWeek=async function(){
     var r=await portalCall("?action=add",{entries:send});
     wp.leave=leave; wp.applied=true; persist();
     await portalImport();
-    alert("Sent "+(r&&r.added!=null?r.added:send.length)+" day(s) to the portal.");
+    var msg="Sent "+(r&&r.added!=null?r.added:send.length)+" day(s) to the portal.";
+    var sk=(r&&r.skipped)||[], rj=(r&&r.rejected)||[];
+    if(sk.length) msg+="\n\nNot added ("+sk.length+") — the portal already has these days:\n"
+      +sk.map(function(s){ return (s.date?(s.emp_id+" "+s.date+(s.existing&&s.existing!==s.sent?" (portal has "+s.existing+", payroll sent "+s.sent+")":"")+" — "):"")+s.reason; }).join("\n");
+    if(rj.length) msg+="\n\nRejected ("+rj.length+") — bad date or missing field.";
+    alert(msg);
   }catch(e){ alert("Send to portal failed: "+(e.message||e)); }
 };
 /* legacy (no-portal) balance deduction, kept as a fallback */
@@ -2236,7 +2267,9 @@ window.applyLeaveToBalances=function(){
     if(a.sickD>0||a.vacD>0) lines.push(lastName(emp.name)+": "+[a.sickD?a.sickD+" sick":"",a.vacD?a.vacD+" vac":""].filter(Boolean).join(", ")); });
   if(!lines.length){ alert("No sick or vacation days to subtract this week."); return; }
   if(!confirm("Subtract this week from leave balances?\n\n"+lines.join("\n"))) return;
-  S.employees.forEach(function(emp){ var a=leave[emp.id]; emp.sickDays=Math.max(0,(Number(emp.sickDays)||0)-a.sickD); emp.vacDays=Math.max(0,(Number(emp.vacDays)||0)-a.vacD); });
+  /* Balances are allotment minus portal usage — the portal is the system of record.
+     This only freezes the week's allocation; it must NOT decrement a second local
+     copy, or the day gets subtracted twice once it lands in the portal. */
   wp.leave=leave; wp.applied=true; persist(); renderReport();
 };
 function holidayHoursFor(emp,wp){
@@ -2414,7 +2447,7 @@ function renderWeekBox(){
     var lf=leftFor(emp), u=usedFor(emp), pid=portalIdFor(emp);
     return '<tr><td>'+esc(emp.name)+'</td>'
       +'<td class="num"><input value="'+esc(pid)+'" onchange="onPortalId(\''+emp.id+'\',this.value)" style="width:50px;text-align:center"></td>'
-      +'<td class="num">5</td>'
+      +'<td class="num"><input type="number" step="0.5" min="0" value="'+sickAllotFor(emp)+'" onchange="onAllot(\''+emp.id+'\',\'sickAllot\',this.value)" style="width:58px;text-align:right"></td>'
       +'<td class="num"><input type="number" step="0.5" min="0" value="'+(emp.vacAllot!=null?emp.vacAllot:"")+'" onchange="onAllot(\''+emp.id+'\',\'vacAllot\',this.value)" style="width:58px;text-align:right"></td>'
       +'<td class="num">'+(portalOn()?u.S:'–')+'</td><td class="num">'+(portalOn()?u.V:'–')+'</td>'
       +'<td class="num"><b>'+lf.sick+'</b></td><td class="num"><b>'+lf.vac+'</b></td></tr>';
