@@ -163,8 +163,20 @@ const PORTAL_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY,
   { auth: { storage: window.sessionStorage, storageKey: "fringe-auth" } });
-const pb = supabase.createClient(PORTAL_URL, PORTAL_ANON_KEY,
-  { auth: { storage: window.sessionStorage, storageKey: "fringe-portal" } });
+/* leave_entries has RLS on with no policies, so the anon key can't read the
+   table directly — go through the portal-leave Edge Function instead. */
+async function portalLeave(start, end){
+  try{
+    const r = await fetch(PORTAL_URL + "/functions/v1/portal-leave?action=summary",
+      { headers: { apikey: PORTAL_ANON_KEY, "Content-Type": "application/json" } });
+    const j = await r.json();
+    if(!r.ok) return { data: null, error: { message: (j && j.error) || ("Leave service error " + r.status) } };
+    const rows = ((j && j.entries) || [])
+      .filter(e => e.date >= start && e.date <= end)
+      .map(e => ({ emp_id: e.emp_id, date: e.date, type: e.type }));
+    return { data: rows, error: null };
+  }catch(err){ return { data: null, error: { message: String(err.message || err) } }; }
+}
 const MONTHS = ["JUNE","JULY","AUG","SEPT","OCT","NOV","DEC","JAN","FEB","MARCH","APRIL","MAY"];
 let employees = [], rates = {}, hours = {};   // hours[empId][isoMonth] = number
 
@@ -493,7 +505,7 @@ async function autoFillCodes(){
   const fr = periodWeekEnds($("moSel").value);
   const start = addDays(fr[0], -6), end = fr[fr.length - 1];
   const [leaveRes, holRes] = await Promise.all([
-    pb.from("leave_entries").select("emp_id,date,type").gte("date", start).lte("date", end),
+    portalLeave(start, end),
     sb.from("fringe_holidays").select("holiday_date").gte("holiday_date", start).lte("holiday_date", end)
   ]);
   if(leaveRes.error){ alert("Couldn't read the leave portal: " + leaveRes.error.message); return 0; }
