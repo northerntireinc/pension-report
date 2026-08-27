@@ -455,7 +455,8 @@
     <div class="eyebrow" style="margin-bottom:10px">Employer / contractor</div>
     <div class="grid two">
       <div class="field"><label>Company name</label><input type="text" id="setEmployer"></div>
-      <div class="field"><label>Contractor code</label><input type="text" id="setCode" placeholder="202251"></div>
+      <div class="field"><label>Contractor code &mdash; Shop</label><input type="text" id="setCode" placeholder="202250"></div>
+      <div class="field"><label>Contractor code &mdash; Salary</label><input type="text" id="setCodeMgmt" placeholder="202251"></div>
       <div class="field"><label>EIN</label><input type="text" id="setEIN" placeholder="38-1675734"></div>
       <div class="field"><label>Telephone</label><input type="text" id="setPhone"></div>
       <div class="field"><label>Address</label><input type="text" id="setAddr"></div>
@@ -595,6 +596,7 @@ function fresh(){
 }
 var S=load()||fresh();
 if(!S.currentMonth)S.currentMonth=thisMonth;
+if(!S.migratedCodeSplit){ if(!S.settings.codeMgmt){ S.settings.codeMgmt=S.settings.code||"202251"; if(S.settings.code==="202251") S.settings.code="202250"; } S.migratedCodeSplit=true; persist(); }
 function persist(){ store(S); if(typeof schedulePush==="function" && !syncApplying) schedulePush(); }
 /* one-time: Shop Agreement employees are hourly (time-clock based) */
 if(!S.migratedHourlyV3){ (S.employees||[]).forEach(function(e){e.type="hourly";}); S.migratedHourlyV3=true; persist(); }
@@ -1020,7 +1022,7 @@ function formP1(cov,title){
     +'</div>'
     +'<div class="grow">'
       +'<div class="gc gc-name"><span class="lab">Name of Company</span><span class="v">'+esc(s.employer)+'</span></div>'
-      +'<div class="gc"><span class="lab">Contractor Code Number</span><span class="v">'+esc(s.code)+'</span></div>'
+      +'<div class="gc"><span class="lab">Contractor Code Number</span><span class="v">'+esc(cov==="mgmt"?(s.codeMgmt||s.code):s.code)+'</span></div>'
       +'<div class="gc"><span class="lab">Work Month (Month/Year)</span><span class="v">'+esc(monthMY())+'</span></div>'
     +'</div>'
     +'<div class="grow">'
@@ -1075,7 +1077,7 @@ function formP2(cov){
     +'</div>'
     +'<div class="p2meta">'
       +'<div class="gc gc-name"><span class="lab">Contractor&rsquo;s Name</span><span class="v">'+esc(s.employer)+'</span></div>'
-      +'<div class="gc"><span class="lab">Contractor Number</span><span class="v">'+esc(s.code)+'</span></div>'
+      +'<div class="gc"><span class="lab">Contractor Number</span><span class="v">'+esc(cov==="mgmt"?(s.codeMgmt||s.code):s.code)+'</span></div>'
       +'<div class="gc"><span class="lab">Work Month</span><span class="v">'+esc(monthName())+'</span></div>'
       +'<div class="gc gc-pg"><span class="lab">No. of Pages<br>This Report</span><span class="v">1</span></div>'
     +'</div>'
@@ -1295,7 +1297,7 @@ window.rmEmp=function(eid){
 
 function renderSetup(){
   var s=S.settings;
-  set("setEmployer",s.employer);set("setCode",s.code);set("setEIN",s.ein);set("setPhone",s.phone);set("setAddr",s.addr);set("setCity",s.city);
+  set("setEmployer",s.employer);set("setCode",s.code);set("setCodeMgmt",s.codeMgmt||"");set("setEIN",s.ein);set("setPhone",s.phone);set("setAddr",s.addr);set("setCity",s.city);
   set("setMin",s.minHours);set("setMax",(s.maxHours!=null&&s.maxHours!=="")?s.maxHours:"");set("setStd",s.stdSalaried);
   set("setPrTo",s.payrollTo);set("setPrCc",s.payrollCc);set("setReminder",s.reminderTo||"vickisaul@me.com");
   set("setFormNo",s.formNo||"");set("setFormRev",s.formRev||"");
@@ -1336,6 +1338,7 @@ function bindSetup(){
   function n(v){return v===""?null:Number(v);}
   bind("setEmployer",function(v){S.settings.employer=v;document.getElementById("hdrEmployer").textContent=v||"Fringe Remittance";renderHero();renderPrint();});
   bind("setCode",function(v){S.settings.code=v;renderPrint();});
+  bind("setCodeMgmt",function(v){S.settings.codeMgmt=v;renderPrint();});
   bind("setEIN",function(v){S.settings.ein=v;renderPrint();});
   bind("setPhone",function(v){S.settings.phone=v;});
   bind("setAddr",function(v){S.settings.addr=v;});
@@ -2580,7 +2583,7 @@ window.renderPackets=function(){
 var _formP1=formP1;
 window.formP1=function(cov,title){
   var html=_formP1(cov,title);
-  var d=fundDisplay(cov), grandAdj=0;
+  var d=fundDisplay(cov), grandAdj=0, grandSum=0;
   /* rebuild remittance rows with adjustments by re-running the same math the original uses */
   var s=S.settings, g=groupTotals(cov), pf={},ph={},pb={};
   S.settings.funds.forEach(function(f){pf[f.id]=0;ph[f.id]=0;pb[f.id]=0;});
@@ -2591,7 +2594,11 @@ window.formP1=function(cov,title){
   S.settings.funds.forEach(function(f){
     var on=applies(f)&&((Number(f.rate)>0&&((f.basis==="pct"?pb[f.id]:ph[f.id])>0))||adjFor(cov,f.id)!==0);
     var adj=on?adjFor(cov,f.id):0; if(on) grandAdj+=adj;
-    var tot=(pf[f.id]||0)+adj;
+    /* line amount = rate x pooled hours, rounded to cents at the LINE, so the grand total
+       equals the printed column sum exactly (no hidden sub-penny carry) */
+    var lineAmt=Math.round((f.basis==="pct"?(pb[f.id]||0)*Number(f.rate)/100:(f.basis==="flat"?(pf[f.id]||0):(ph[f.id]||0)*Number(f.rate)))*100)/100;
+    pf[f.id]=lineAmt;
+    var tot=Math.round((lineAmt+adj)*100)/100; if(on) grandSum+=tot;
     remit+='<tr><td class="rx romit"></td><td class="rf">'+esc(f.name.toUpperCase())+'</td>'
       +'<td class="rr">'+(on?"$"+money(f.rate):"")+'</td><td class="rx">'+(on?"x":"")+'</td>'
       +'<td class="rm">'+(on?(f.basis==="pct"?money(pb[f.id]):hrs(ph[f.id])):"")+'<div class="msub">'+(f.basis==="pct"?"BASE WAGES":"PAID HOURS")+'</div></td>'
@@ -2599,7 +2606,7 @@ window.formP1=function(cov,title){
       +'<td class="radj">'+(on&&adj?((adj<0?"-$":"$")+money(Math.abs(adj))):"")+'</td>'
       +'<td class="rt">'+(on?"$"+money(tot):"")+'</td></tr>';
   });
-  var grand=g.t.total+grandAdj;
+  var grand=Math.round(grandSum*100)/100;
   /* swap the original tbody + grand total into the produced HTML */
   html=html.replace(/(<table class="remt">[\s\S]*?<tbody>)[\s\S]*?(<\/tbody>)/, function(_m,p1,p2){ return p1+remit+p2; });
   html=html.replace(/(class="rt grt">)\$[\d,]+\.\d\d(<\/td>)/, function(_m,p1,p2){ return p1+"$"+money(grand)+p2; });
