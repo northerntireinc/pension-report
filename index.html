@@ -2752,6 +2752,39 @@ window.renderSync=function(){
   if(sc&&sc[0]){ var p=sc[0].querySelector("p.footnote"); if(p) p.innerHTML="Sync this app across all your devices through your NTI Supabase project. <b>No sign-in needed</b> — paste the same Supabase URL + anon key on each device and they share data automatically. Everything syncs <b>except SSNs</b>, which stay on each device."; }
 })();
 
+/* ===== Fill the month's 3029 hours from the Fringe Report's saved totals ===== */
+window.fillFromFringe=async function(){
+  if(!sbConfigured()){ alert("Add your Supabase URL + anon key in Setup \u2192 Cloud sync first."); return; }
+  var m=S.currentMonth, r, j=null;
+  try{
+    r=await fetch(sbBase()+"/functions/v1/fringe-month?month="+m,{headers:{"apikey":String(S.settings.syncKey||"").trim()}});
+    j=await r.json();
+  }catch(e){ alert("Could not reach the Fringe report: "+(e.message||e)); return; }
+  if(!r.ok||(j&&j.error)){ alert("Fringe read failed: "+((j&&j.error)||("error "+r.status))); return; }
+  var list=(j&&j.employees)||[];
+  if(!list.length){ alert("The Fringe report has no saved totals for "+monthName()+" yet.\n\nIn the Fringe report: pick the month, check the worksheet, then tap \u201cWrite totals to monthly report\u201d \u2014 then fill again here."); return; }
+  var applied=[], missing=[];
+  S.employees.forEach(function(emp){
+    if(emp.type==="salaried") return;                       /* Lee's monthly hours stay as they are */
+    var ln=lastName(emp.name).toUpperCase();
+    var row=list.filter(function(x){ return String(x.name||"").toUpperCase().indexOf(ln)===0; })[0];
+    if(!row){ missing.push(lastName(emp.name)); return; }
+    var e=entry(emp.id);
+    e.worked=Math.round(Number(row.hours)*100)/100;
+    e.sick=0; e.vac=0;                                      /* fringe totals already include S/V/H \u2014 no double count */
+    applied.push(lastName(emp.name)+" "+hrs(e.worked));
+  });
+  persist(); renderAll();
+  alert("Filled "+monthName()+" from the Fringe report:\n"+(applied.join(", ")||"nothing matched")
+    +(missing.length?("\nNo fringe match for: "+missing.join(", ")):"")
+    +"\n\nFringe totals already include sick/vacation/holiday, so the sick & vacation day boxes were set to 0. Lee\u2019s salary hours are unchanged. Check the Print / File tab.");
+};
+(function addFringeFillBtn(){
+  if(document.getElementById("fillFringeBtn")) return;
+  var btn=document.querySelector('button[onclick="tsPull()"]');
+  if(btn) btn.insertAdjacentHTML("afterend",' <button id="fillFringeBtn" class="btn ghost sm" onclick="fillFromFringe()">Fill from Fringe report</button>');
+})();
+
 renderSync();
 })();
 </script>
