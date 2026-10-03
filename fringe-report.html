@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NTI — Fringe Benefit Report (Form 3029)</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -86,14 +88,14 @@
   <input type="email" id="email" placeholder="Email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
   <input type="password" id="password" placeholder="Password" autocomplete="current-password">
   <button class="btn" style="width:100%" onclick="signIn()">Sign in</button>
-  <p style="margin-top:12px;text-align:center"><a href="index.html" style="color:var(--steel);font-size:13px">&#8592; Back to Pension App</a><br><span style="color:var(--muted);font-size:11px">build v15</span></p>
+  <p style="margin-top:12px;text-align:center"><a href="index.html" style="color:var(--steel);font-size:13px">&#8592; Back to Pension App</a><br><span style="color:var(--muted);font-size:11px">build v16</span></p>
 </div>
 
 <div id="app" hidden>
 <header class="appbar">
   <button onclick="location.href='index.html'">&#8592; Pension App</button>
   <h1>Fringe Benefit Report</h1>
-  <span class="sub">IUOE Local 324 · Section S Shop Agreement · attach to Form 3029 · <b>build v15</b></span>
+  <span class="sub">IUOE Local 324 · Section S Shop Agreement · attach to Form 3029 · <b>build v16</b></span>
   <span class="spacer"></span>
   <button onclick="signOut()">Sign out</button>
 </header>
@@ -654,13 +656,25 @@ async function syncMonth(){
   const periodStart = addDays(fr[0], -6), periodEnd = fr[fr.length - 1];
   const today = new Date().toISOString().slice(0,10);
   await loadDaily();                                        // know what we already have
+  const hasData = d => employees.some(e => (daily[e.id] && daily[e.id][d] != null) || (codes[e.id] && codes[e.id][d]));
   let latest = null;
   employees.forEach(e => Object.keys(daily[e.id] || {}).forEach(d => {
     if(d >= periodStart && d <= periodEnd && (!latest || d > latest)) latest = d;
   }));
-  let start = periodStart;
-  if(latest){ const resume = addDays(latest, -6); if(resume > start) start = resume; }  // re-check current week only
   let end = periodEnd < today ? periodEnd : today;
+  /* find the earliest WEEKDAY in the period with nothing saved — a hole. The old
+     logic resumed from the NEWEST saved day, so a gap sitting behind it (a week
+     pulled mid-week, or a week added to the period later) was never fetched. */
+  let firstHole = null;
+  for(let d = periodStart; d <= end; d = addDays(d, 1)){
+    const dow = new Date(d + "T00:00:00Z").getUTCDay();
+    if(dow === 0 || dow === 6) continue;                    // empty weekends are normal, not holes
+    if(!hasData(d)){ firstHole = d; break; }
+  }
+  let start = periodStart;
+  if(!latest){ /* nothing saved yet — pull the whole period, weekends included */ }
+  else if(firstHole) start = firstHole;
+  else { const resume = addDays(latest, -6); if(resume > start) start = resume; }  // no holes: re-check current week only
   if(start > end){
     if(!confirm("Everything through " + end + " is already pulled.\nRe-pull the whole period to pick up any TimeStation corrections?")) return;
     start = periodStart; end = periodEnd < today ? periodEnd : today;
